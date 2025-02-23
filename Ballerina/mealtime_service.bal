@@ -1,0 +1,90 @@
+import ballerina/http;
+import ballerina/sql;
+import ballerina/io;
+
+type MealTime record {|
+    int id?;
+    string mealName;
+    string mealImageUrl;
+|};
+
+
+@http:ServiceConfig {
+    cors: {
+        allowOrigins: ["http://localhost:5173", "*"],
+        allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+        allowHeaders: ["Content-Type"]
+    }
+}
+service /mealtime on new http:Listener(9090) {
+
+    resource function get .() returns MealTime[]|error {
+        stream<MealTime, sql:Error?> resultStream = 
+            dbClient->query(`SELECT id, meal_name as mealName, meal_image_url as mealImageUrl FROM MealTimes`);
+        
+        MealTime[] mealtimes = [];
+        check resultStream.forEach(function(MealTime meal) {
+            mealtimes.push(meal);
+        });
+
+        return mealtimes;
+    }
+
+    resource function post add(@http:Payload MealTime mealTime) returns json|error {
+        io:println("Received meal time data: " + mealTime.toJsonString());
+
+        sql:ExecutionResult result = check dbClient->execute(`
+            INSERT INTO MealTimes (meal_name, meal_image_url)
+            VALUES (${mealTime.mealName}, ${mealTime.mealImageUrl})
+        `);
+
+        int|string? lastInsertId = result.lastInsertId;
+        if lastInsertId is int {
+            mealTime.id = lastInsertId;
+        }
+
+        return {
+            message: "Meal time added successfully",
+            mealTime: mealTime
+        };
+    }
+
+    resource function put [int id](@http:Payload MealTime mealTime) returns json|error {
+        sql:ExecutionResult result = check dbClient->execute(`
+            UPDATE MealTimes 
+            SET meal_name = ${mealTime.mealName}, meal_image_url = ${mealTime.mealImageUrl}
+            WHERE id = ${id}
+        `);
+
+        if result.affectedRowCount == 0 {
+            return {
+                message: "Meal time not found"
+            };
+        }
+
+        return {
+            message: "Meal time updated successfully",
+            mealTime: mealTime
+        };
+    }
+
+    resource function delete [int id]() returns json|error {
+        sql:ExecutionResult result = check dbClient->execute(`
+            DELETE FROM MealTimes WHERE id = ${id}
+        `);
+
+        if result.affectedRowCount == 0 {
+            return {
+                message: "Meal time not found"
+            };
+        }
+
+        return {
+            message: "Meal time deleted successfully"
+        };
+    }
+
+    resource function options .() returns http:Ok {
+        return http:OK;
+    }
+}
