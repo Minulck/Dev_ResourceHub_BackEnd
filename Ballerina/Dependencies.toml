@@ -326,6 +326,8 @@ dependencies = [
 	{org = "ballerinax", name = "mysql"}
 ]
 modules = [
-	{org = "user", packageName = "backend", moduleName = "backend"}
+	{org = "user", packageName = "backend", moduleName = "backend"},
+	{org = "user", packageName = "backend", moduleName = "backend.example"},
+	{org = "user", packageName = "backend", moduleName = "backend.resourcehubservices"}
 ]
 
