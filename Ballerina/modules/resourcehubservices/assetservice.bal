@@ -1,5 +1,6 @@
 import ballerina/http;
 import ballerina/sql;
+import ballerina/io;
 
 public type Asset record {|
     int id;
@@ -29,4 +30,7 @@ service /asset on ln{
 
         return assets;
     }
+}
+public function startAssetService() returns error? {
+    io:println("Assets service started on port 9090");
 }

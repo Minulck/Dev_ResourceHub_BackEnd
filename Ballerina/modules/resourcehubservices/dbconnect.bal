@@ -1,5 +1,6 @@
 import ballerina/http;
 import ballerinax/mysql;
+import ballerina/io;
 
 configurable string USER = "root";
 configurable string PASSWORD ="Chathumal@12";
@@ -12,3 +13,7 @@ final mysql:Client dbClient = check new(
 );
 
 listener http:Listener ln = new (9090);
+
+public function ConnectDatabase() returns error? {
+    io:println("Database connected succesfully.....");
+}

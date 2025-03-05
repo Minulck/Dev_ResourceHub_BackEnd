@@ -34,17 +34,17 @@ jwt:ValidatorConfig jwtValidatorConfig = {
         allowHeaders: ["Content-Type"]
     }
 }
-service /auth on new http:Listener(8080) {
+service /auth on ln {
 
-    resource function post login(@http:Payload record {string username; string password;} credentials) returns json|error {
+    resource function post login(@http:Payload record {string email; string password;} credentials) returns json|error {
         
-        sql:ParameterizedQuery query = `SELECT email, password, usertype FROM users WHERE email = ${credentials.username}`;
-        record {|string email; string password; string usertype;|}|sql:Error result = dbClient->queryRow(query);
+        sql:ParameterizedQuery query = `SELECT username, email, password, usertype FROM users WHERE email = ${credentials.email}`;
+        record {|string username;string email; string password; string usertype;|}|sql:Error result = dbClient->queryRow(query);
 
         if (result is sql:Error) {
             if (result is sql:NoRowsError) {
-                io:println("Invalid username: " + credentials.username);
-                return error("Invalid username");
+                io:println("Invalid email: " + credentials.email);
+                return error("Invalid email");
             } else {
                 io:println("Database error: " + result.message());
                 return error("Database error");
@@ -53,14 +53,14 @@ service /auth on new http:Listener(8080) {
 
         if (result.password == credentials.password) {
             jwt:IssuerConfig config = jwtIssuerConfig;
-            config.username = credentials.username;
+            config.username = credentials.email;
             config.customClaims = {"role": result.usertype};
-            
+            config.customClaims = {"username": result.username};
             string token = check jwt:issue(config);
-            io:println("Login successful for user");
-            return {token: token, usertype: result.usertype};
+
+            return {token: token, usertype: result.usertype , username: result.username, email: result.email};
         } else {
-            io:println("Invalid password for user: " + credentials.username);
+            io:println("Invalid password for user: " + credentials.email);
             return error("Invalid password");
         }
     }

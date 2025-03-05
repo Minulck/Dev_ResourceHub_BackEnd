@@ -1,5 +1,6 @@
 import ballerina/http;
 import ballerina/sql;
+import ballerina/io;
 
 public type User record {|
     int id;
@@ -33,4 +34,8 @@ service /user on ln {
 
         return users;
     }
+}
+
+public function UserManagementService() returns error? {
+    io:println("UserManagement service started on port 9090");
 }
