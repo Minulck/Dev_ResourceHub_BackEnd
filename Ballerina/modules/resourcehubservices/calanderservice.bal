@@ -7,6 +7,7 @@ public type MealEvent record {|
     int id?;
     string meal_time;
     string meal_type;
+    string username;
     int user_id;
     string submitted_date;
     string meal_request_date;
@@ -20,9 +21,12 @@ public type MealEvent record {|
 }
 service /calander on ln{
     // MealEvents endpoints
-    resource function get mealevents() returns MealEvent[]|error {
+    resource function get mealevents/[int userid]() returns MealEvent[]|error {
         stream<MealEvent, sql:Error?> resultStream = 
-            dbClient->query(`SELECT * FROM MealEvents`);
+            dbClient->query(`SELECT MealEvents.id, meal_time, meal_type, username,user_id, submitted_date, meal_request_date 
+            FROM MealEvents
+            JOIN Users ON MealEvents.user_id = Users.id
+            WHERE MealEvents.user_id = ${userid}`);
         
         MealEvent[] events = [];
         check resultStream.forEach(function(MealEvent event) {
@@ -32,6 +36,19 @@ service /calander on ln{
         return events;
     }
 
+    resource function get mealevents() returns MealEvent[]|error {
+        stream<MealEvent, sql:Error?> resultStream = 
+            dbClient->query(`SELECT MealEvents.id, meal_time, meal_type, username,user_id, submitted_date, meal_request_date 
+            FROM MealEvents
+            JOIN Users ON MealEvents.user_id = Users.id`);
+        
+        MealEvent[] events = [];
+        check resultStream.forEach(function(MealEvent event) {
+            events.push(event);
+        });
+
+        return events;
+    }
     resource function post mealevents/add(@http:Payload MealEvent event) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             INSERT INTO MealEvents (meal_time, meal_type, user_id, submitted_date, meal_request_date)

@@ -38,8 +38,8 @@ service /auth on ln {
 
     resource function post login(@http:Payload record {string email; string password;} credentials) returns json|error {
         
-        sql:ParameterizedQuery query = `SELECT username, email, password, usertype FROM users WHERE email = ${credentials.email}`;
-        record {|string username;string email; string password; string usertype;|}|sql:Error result = dbClient->queryRow(query);
+        sql:ParameterizedQuery query = `SELECT username,id, email, password, usertype FROM users WHERE email = ${credentials.email}`;
+        record {|string username;int id;string email; string password; string usertype;|}|sql:Error result = dbClient->queryRow(query);
 
         if (result is sql:Error) {
             if (result is sql:NoRowsError) {
@@ -56,9 +56,10 @@ service /auth on ln {
             config.username = credentials.email;
             config.customClaims = {"role": result.usertype};
             config.customClaims = {"username": result.username};
+            config.customClaims = {"id": result.id};
             string token = check jwt:issue(config);
 
-            return {token: token, usertype: result.usertype , username: result.username, email: result.email};
+            return {token: token, usertype: result.usertype , username: result.username,id: result.id, email: result.email};
         } else {
             io:println("Invalid password for user: " + credentials.email);
             return error("Invalid password");
