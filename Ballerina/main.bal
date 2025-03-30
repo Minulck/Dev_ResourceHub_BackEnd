@@ -6,5 +6,6 @@ public function main() returns error? {
     check resourcehubservices:startCalanderService();
     check resourcehubservices:startAssetService();
     check resourcehubservices:UserManagementService();
+    check resourcehubservices:maintenancesManagementService();
 
 }
