@@ -2,11 +2,11 @@ import ballerina/http;
 import ballerinax/mysql;
 import ballerina/io;
 
-configurable string USER = "root";
-configurable string PASSWORD ="Chathumal@12";
-configurable string HOST = "localhost";
-configurable int PORT =3306;
-configurable string DATABASE = "company";
+configurable string USER =? ;
+configurable string PASSWORD =?;
+configurable string HOST =? ;
+configurable int PORT =?;
+configurable string DATABASE =? ;
 
 final mysql:Client dbClient = check new(
     host=HOST, user=USER, password=PASSWORD, port=PORT, database=DATABASE
