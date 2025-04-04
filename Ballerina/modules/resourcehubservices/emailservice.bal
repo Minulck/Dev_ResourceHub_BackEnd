@@ -84,9 +84,8 @@ service /report on ln {
 
         check emailClient->sendMessage(emailMessage);
 
-        // Step 3: Respond to the client
         http:Response response = new;
-        response.setPayload("Report has been sented " );
+        response.setPayload("Report has been sented sucessfully" );
         check caller->respond(response);
     }
 }
