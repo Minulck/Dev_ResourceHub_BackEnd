@@ -1,6 +1,0 @@
-[backend.resourcehubservices]
-USER = "root"
-PASSWORD ="Chathumal@12"
-HOST = "localhost"
-PORT =3306
-DATABASE = "company"
