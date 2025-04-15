@@ -5,6 +5,8 @@
 Configure the application using environment variables. Create a `Config.toml` file in the "Ballerina\Config.toml" directory or set the variables directly in your environment.
 
 ```dotenv
+[backend.resourcehubservices]
+
 # Database configuration
 USER="your_database_user"
 PASSWORD="your_database_password"
