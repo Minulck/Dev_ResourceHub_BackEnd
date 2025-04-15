@@ -24,4 +24,4 @@ build/
 Thumbs.db
 
 # Configuration file
-config.toml
+Config.toml
