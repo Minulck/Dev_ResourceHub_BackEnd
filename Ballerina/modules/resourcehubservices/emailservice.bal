@@ -3,12 +3,6 @@ import ballerina/io;
 import ballerina/email;
 import ballerina/mime;
 
-
-configurable string SMTP_HOST = ?;
-configurable string SMTP_USER = ?;
-configurable string SMTP_PASSWORD = ?;
-configurable string PDFSHIFT_API_KEY = ?;
-
 service /report on ln {
     resource function get generate(http:Caller caller) returns error? {
         // Fetch data
@@ -62,7 +56,7 @@ service /report on ln {
             "/v3/convert/pdf",
             pdfRequest,
             headers = {
-                "Authorization": "Basic " + ("api:" + PDFSHIFT_API_KEY).toBytes().toBase64(), // Replace with your API key
+                "Authorization": "Basic " + "api:sk_fa06cda61f1ad57d42866234fc77e019fee01267".toBytes().toBase64(), // Replace with your API key
                 "Content-Type": "application/json"
             }
         );
@@ -70,6 +64,12 @@ service /report on ln {
         byte[] pdfBytes = check pdfResponse.getBinaryPayload();
 
         // Step 2: Send email with PDF attachment
+        email:SmtpClient emailClient = check new (
+            host = "smtp.gmail.com", // Replace with your SMTP host
+            username = "minulck@gmail.com", // Replace with your email
+            password = "bvov azkj eziq enig", // Replace with your password or app-specific password
+            security = email:SSL
+        );
 
         mime:Entity pdfAttachment = new;
         pdfAttachment.setByteArray(pdfBytes, "application/pdf");

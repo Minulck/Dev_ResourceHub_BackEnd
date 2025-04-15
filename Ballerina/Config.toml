@@ -1,19 +1,6 @@
 [backend.resourcehubservices]
-
-# Database configuration
-
 USER = "root"
 PASSWORD ="Chathumal@12"
 HOST = "localhost"
 PORT =3306
 DATABASE = "company"
-
-# SMTP server configuration
-
-SMTP_HOST = "smtp.gmail.com"
-SMTP_USER = "minulck@gmail.com"
-SMTP_PASSWORD = "bvov azkj eziq enig"
-
-#API keys
-
-PDFSHIFT_API_KEY = "sk_fa06cda61f1ad57d42866234fc77e019fee01267"
