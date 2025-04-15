@@ -46,8 +46,6 @@ service /user on ln {
             values (${user.username},${user.profile_picture_url},${user.usertype},${user.email},${user.phone_number},${randomString},${user.additional_details},${user.created_at})`
         );
         if result.affectedRowCount != 0 {
-           
-            email:SmtpClient smtpClient = check new ("smtp.gmail.com", "minulck@gmail.com", "bvov azkj eziq enig");
 
             email:Message email = {
                 to: [user.email],
@@ -58,7 +56,7 @@ service /user on ln {
                       "http://localhost:5173/login"
             };
 
-            check smtpClient->sendMessage(email);
+            check emailClient->sendMessage(email);
 
             return {
                 message: "User not added successfully"
