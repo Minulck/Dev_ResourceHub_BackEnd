@@ -27,7 +27,7 @@ public type User record {|
 service /user on ln {
     resource function get details() returns User[]|error {
         stream<User, sql:Error?> resultStream =
-            dbClient->query(`SELECT * FROM Users`);
+            dbClient->query(`SELECT * FROM users`);
 
         User[] users = [];
         check resultStream.forEach(function(User user) {
