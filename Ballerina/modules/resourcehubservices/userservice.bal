@@ -107,3 +107,6 @@ service /user on ln {
 
 }
 
+public function UserManagementService() returns error? {
+    io:println("User management service started on port 9090");
+}
