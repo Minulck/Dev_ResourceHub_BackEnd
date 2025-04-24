@@ -5,9 +5,9 @@ import ballerina/io;
 
 public type MealEvent record {|
     int id?;
-    string meal_time;
-    string meal_type;
-    string username;
+    int meal_time;
+    int meal_type;
+    string username?;
     int user_id;
     string submitted_date;
     string meal_request_date;
