@@ -24,10 +24,10 @@ public type User record {|
     } 
 }
 
-service /user on ln { 
-    resource function get details() returns User[]|error { 
-        stream<User, sql:Error?> resultStream = 
-            dbClient->query(`SELECT * FROM users`); 
+service /user on ln {
+    resource function get details() returns User[]|error {
+        stream<User, sql:Error?> resultStream =
+            dbClient->query(`SELECT * FROM users`);
 
         User[] users = []; 
         check resultStream.forEach(function(User user) { 
@@ -87,11 +87,10 @@ service /user on ln {
         } 
     }
 
-    resource function delete details/[int id]() returns json|error { // Corrected resource path syntax 
-        // Corrected SQL query string interpolation - Use ${id} syntax
-        sql:ExecutionResult result = check dbClient->execute(` 
+    resource function delete  details/[int id]() returns json|error {
+        sql:ExecutionResult result = check dbClient->execute(`
             DELETE FROM users WHERE id = ${id}
-        `); // Parameter is interpolated directly in the query string
+        `);
 
         if result.affectedRowCount == 0 { 
             return { 
