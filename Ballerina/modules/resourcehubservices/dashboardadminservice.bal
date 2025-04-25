@@ -28,6 +28,12 @@ type MealDistributionData record {|
     int count;
 |};
 
+type ResourceAllocationData record {|
+    string category;
+    decimal allocated;
+    decimal total;
+|};
+
 // DashboardAdminService - RESTful service to provide data for admin dashboard
 @http:ServiceConfig {
     cors: {
@@ -274,29 +280,36 @@ service /dashboard/admin on ln {
 
     // Resource to get resource allocation data
     resource function get resourceallocation() returns json|error {
-        return [
-            {
-                category: "Food",
-                allocated: 65,
-                total: 100
-            },
-            {
-                category: "Medicine",
-                allocated: 40,
-                total: 50
-            },
-            {
-                category: "Shelter",
-                allocated: 25,
-                total: 30
-            },
-            {
-                category: "Clothing",
-                allocated: 15,
-                total: 20
-            }
-        ];
+    // Query to get total and allocated quantities by category
+    stream<ResourceAllocationData, sql:Error?> allocationStream = dbClient->query(
+        `SELECT 
+            category,
+            SUM(quantity) AS total
+         FROM assets 
+         GROUP BY category 
+         ORDER BY category`,
+        ResourceAllocationData
+    );
+
+    // Convert stream to array
+    ResourceAllocationData[] allocationData = [];
+    check from ResourceAllocationData row in allocationStream
+        do {
+            allocationData.push(row);
+        };
+
+    // Construct the JSON response
+    json[] result = [];
+    foreach var row in allocationData {
+        result.push({
+            "category": row.category,
+            "allocated":  row.total,
+            "total": row.total
+        });
     }
+
+    return result;
+}
 
     resource function options .() returns http:Ok {
         return http:OK;
