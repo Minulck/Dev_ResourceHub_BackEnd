@@ -4,15 +4,16 @@ import ballerina/sql;
 
 public type AssetRequest record {|
     int id?;
-    string username;
-    string profile_picture_url;
-    string asset_name;
-    string category;
+    int userid;
+    int asset_id;
+    string category?;
     string borrowed_date;
     string handover_date;
-    int remaining_days;
+    int remaining_days?;
     int quantity;
-
+    string profile_picture_url?;
+    string username?;
+    string asset_name?;
 |};
 
 @http:ServiceConfig {
@@ -49,12 +50,38 @@ service /assetrequest on ln {
         return assetrequests;
     }
 
+    resource function get details/[int userid]() returns AssetRequest[]|error {
+        stream<AssetRequest, sql:Error?> resultstream = dbClient->query
+        (`SELECT 
+         u.profile_picture_url,
+        u.username,
+        a.id,
+        a.asset_name,
+        a.category,
+        ar.borrowed_date,
+        ar.handover_date,
+        DATEDIFF(ar.handover_date, CURDATE()) AS remaining_days,
+        ar.quantity
+        FROM assetrequests ar
+        JOIN users u ON ar.user_id = u.id
+        JOIN assets a ON ar.asset_id = a.id
+        where user_id=${userid};`);
+
+        AssetRequest[] assetrequests = [];
+
+        check resultstream.forEach(function(AssetRequest assetrequest) {
+            assetrequests.push(assetrequest);
+        });
+
+        return assetrequests;
+    }
+
     resource function post add(@http:Payload AssetRequest assetrequest) returns json|error {
         io:println("Received Asset Request data: " + assetrequest.toJsonString());
 
         sql:ExecutionResult result = check dbClient->execute(`
             INSERT INTO assetrequests (user_id, asset_id, borrowed_date, handover_date, quantity)
-            VALUES (${assetrequest.username}, ${assetrequest.asset_name}, ${assetrequest.borrowed_date}, ${assetrequest.handover_date}, ${assetrequest.quantity})
+            VALUES (${assetrequest.userid}, ${assetrequest.asset_id}, ${assetrequest.borrowed_date}, ${assetrequest.handover_date}, ${assetrequest.quantity})
         `);
 
         int|string? lastInsertId = result.lastInsertId;
@@ -86,7 +113,7 @@ service /assetrequest on ln {
     resource function put details/[int id](@http:Payload AssetRequest assetrequest) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE assetrequests 
-            SET user_id = ${assetrequest.username}, asset_id = ${assetrequest.asset_name}, borrowed_date = ${assetrequest.borrowed_date}, handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity}
+            SET user_id = ${assetrequest.userid}, asset_id = ${assetrequest.asset_id}, borrowed_date = ${assetrequest.borrowed_date}, handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity}
             WHERE id = ${id}
         `);
 
