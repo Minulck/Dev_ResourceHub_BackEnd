@@ -3,9 +3,25 @@ import ballerina/io;
 import ballerina/sql;
 
 type MonthlyUserData record {|
-        int month;
-        int count;
-    |};
+    int month;
+    int count;
+|};
+
+type MonthlyMealData record {|
+    int month;
+    int count;
+|};
+
+type MonthlyAssetRequestData record {|
+    int month;
+    int count;
+|};
+
+type MonthlyMaintenanceData record {|
+    int month;
+    int count;
+|};
+
 // DashboardAdminService - RESTful service to provide data for admin dashboard
 @http:ServiceConfig {
     cors: {
@@ -55,6 +71,28 @@ service /dashboard/admin on ln {
             monthlyUserCounts[row.month - 1] = row.count;
         }
 
+            // Query to get meal events count by month
+        stream<MonthlyMealData, sql:Error?> monthlyMealStream = dbClient->query(
+            `SELECT EXTRACT(MONTH FROM meal_request_date) AS month, COUNT(id) AS count 
+            FROM mealevents 
+            GROUP BY EXTRACT(MONTH FROM meal_request_date) 
+            ORDER BY month`,
+            MonthlyMealData
+        );
+
+        // Convert meal stream to array
+        MonthlyMealData[] monthlyMealData = [];
+        check from MonthlyMealData row in monthlyMealStream
+            do {
+                monthlyMealData.push(row);
+            };
+
+        // Create an array for all 12 months for meal events, initialized with 0
+        int[] monthlyMealCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+        foreach var row in monthlyMealData {
+            monthlyMealCounts[row.month - 1] = row.count;
+        }
+
         return [
             {
                 title: "Total Users",
@@ -66,7 +104,7 @@ service /dashboard/admin on ln {
                 title: "Meals Served",
                 value: mealeventsCount,
                 icon: "Utensils",
-                monthlyData: [980, 1020, 1050, 1080, 1100, 1090, 1120, 1140, 1160, 1180, 1200, 1220]
+                monthlyData: monthlyMealCounts
             },
             {
                 title: "Resources",
