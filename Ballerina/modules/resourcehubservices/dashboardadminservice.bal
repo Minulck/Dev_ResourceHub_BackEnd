@@ -22,6 +22,12 @@ type MonthlyMaintenanceData record {|
     int count;
 |};
 
+type MealDistributionData record {|
+    int day_of_week;
+    string meal_name;
+    int count;
+|};
+
 // DashboardAdminService - RESTful service to provide data for admin dashboard
 @http:ServiceConfig {
     cors: {
@@ -190,31 +196,81 @@ service /dashboard/admin on ln {
 
     // Resource to get meal distribution data for pie chart
     resource function get mealdistribution() returns json|error {
+    // Query to get all meal types from mealtimes
+    stream<MealTime, sql:Error?> mealTimeStream = dbClient->query(
+        `SELECT id, meal_name as mealName FROM mealtimes ORDER BY id`,
+        MealTime
+    );
 
-        return {
-            labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
-            datasets: [
-                {
-                    label: "Breakfast",
-                    data: [10, 15, 20, 25, 30, 35, 40],
-                    borderColor: "#4C51BF",
-                    tension: 0.4
-                },
-                {
-                    label: "Lunch",
-                    data: [20, 25, 30, 35, 40, 45, 50],
-                    borderColor: "#38B2AC",
-                    tension: 0.4
-                },
-                {
-                    label: "Dinner",
-                    data: [5, 10, 15, 20, 25, 30, 35],
-                    borderColor: "#ED8936",
-                    tension: 0.4
-                }
-            ]
+    // Convert meal time stream to array
+    MealTime[] mealTimes = [];
+    check from MealTime row in mealTimeStream
+        do {
+            mealTimes.push(row);
         };
+
+    // Query to get meal event counts by day of week and meal type
+    stream<MealDistributionData, sql:Error?> mealDistributionStream = dbClient->query(
+        `SELECT DAYOFWEEK(meal_request_date) AS day_of_week, mealtimes.meal_name, COUNT(mealevents.id) AS count 
+         FROM mealevents 
+         JOIN mealtimes ON mealevents.meal_time = mealtimes.id 
+         GROUP BY DAYOFWEEK(meal_request_date), mealtimes.meal_name 
+         ORDER BY day_of_week, mealtimes.meal_name`,
+        MealDistributionData
+    );
+
+    // Convert meal distribution stream to array
+    MealDistributionData[] mealDistributionData = [];
+    check from MealDistributionData row in mealDistributionStream
+        do {
+            mealDistributionData.push(row);
+        };
+
+    // Initialize a map to store data arrays for each meal type
+    map<int[]> mealDataMap = {};
+    foreach var meal in mealTimes {
+        mealDataMap[meal.mealName] = [0, 0, 0, 0, 0, 0, 0]; // 7 days: Sun, Mon, Tue, Wed, Thu, Fri, Sat
     }
+
+    // Populate data arrays based on meal_name and day_of_week
+    foreach var row in mealDistributionData {
+        // DAYOFWEEK returns 1=Sunday, 2=Monday, ..., 7=Saturday
+        // Map to array index: 1->0 (Sun), 2->1 (Mon), ..., 7->6 (Sat)
+        int arrayIndex = row.day_of_week - 1;
+        if (mealDataMap.hasKey(row.meal_name)) {
+            int[]? dataArray = mealDataMap[row.meal_name];
+            if (dataArray is int[]) {
+                dataArray[arrayIndex] = row.count;
+            }
+        }
+    }
+
+    // Define border colors for datasets (cycle through a predefined list)
+    string[] borderColors = ["#4C51BF", "#38B2AC", "#ED8936", "#E53E3E", "#805AD5", "#319795", "#DD6B20"];
+    json[] datasets = [];
+    int colorIndex = 0;
+
+    // Create datasets dynamically
+    foreach var meal in mealTimes {
+        string mealName = meal.mealName;
+        int[]? dataArray = mealDataMap[mealName];
+        if (dataArray is int[]) {
+            datasets.push({
+                "label": mealName,
+                "data": dataArray,
+                "borderColor": borderColors[colorIndex % borderColors.length()],
+                "tension": 0.4
+            });
+            colorIndex += 1;
+        }
+    }
+
+    // Construct the JSON response
+    return {
+        "labels": ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
+        "datasets": datasets
+    };
+}
 
     // Resource to get resource allocation data
     resource function get resourceallocation() returns json|error {
