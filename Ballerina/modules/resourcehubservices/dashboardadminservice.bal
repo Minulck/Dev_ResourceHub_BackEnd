@@ -1,5 +1,5 @@
-import ballerina/io;
 import ballerina/http;
+import ballerina/io;
 
 // DashboardAdminService - RESTful service to provide data for admin dashboard
 @http:ServiceConfig {
@@ -12,28 +12,41 @@ import ballerina/http;
 service /dashboard/admin on ln {
     // Resource to get summary statistics for the dashboard
     resource function get stats() returns json|error {
+
+        record {|int user_count;|} userresult = check dbClient->queryRow(`SELECT COUNT(id) AS user_count FROM users`);
+        int userCount = userresult.user_count;
+
+        record {|int mealevents_count;|} mealresult = check dbClient->queryRow(`SELECT COUNT(id) AS mealevents_count FROM mealevents`);
+        int mealeventsCount = mealresult.mealevents_count;
+
+         record {|int assetrequests_count;|} assetrequestsresult = check dbClient->queryRow(`SELECT COUNT(id) AS assetrequests_count FROM assetrequests`);
+        int assetrequestsCount = assetrequestsresult.assetrequests_count;
+
+         record {|int maintenance_count;|} maintenanceresult = check dbClient->queryRow(`SELECT COUNT(id) AS maintenance_count FROM maintenance`);
+        int maintenanceCount = maintenanceresult.maintenance_count;
+
         return [
             {
                 title: "Total Users",
-                value: 2458,
+                value: userCount,
                 icon: "Users",
                 monthlyData: [150, 160, 170, 165, 180, 195, 210, 220, 230, 240, 255, 270]
             },
             {
                 title: "Meals Served",
-                value: 12345,
+                value: mealeventsCount,
                 icon: "Utensils",
                 monthlyData: [980, 1020, 1050, 1080, 1100, 1090, 1120, 1140, 1160, 1180, 1200, 1220]
             },
             {
                 title: "Resources",
-                value: 867,
+                value: assetrequestsCount,
                 icon: "Box",
                 monthlyData: [70, 72, 75, 68, 80, 82, 85, 90, 88, 92, 95, 100]
             },
             {
                 title: "Services",
-                value: 328,
+                value: maintenanceCount,
                 icon: "Wrench",
                 monthlyData: [25, 28, 30, 32, 35, 38, 40, 42, 45, 48, 50, 52]
             }
@@ -116,7 +129,7 @@ service /dashboard/admin on ln {
             }
         ];
     }
-    
+
     resource function options .() returns http:Ok {
         return http:OK;
     }
