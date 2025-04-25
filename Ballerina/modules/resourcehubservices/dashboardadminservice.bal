@@ -1,6 +1,11 @@
 import ballerina/http;
 import ballerina/io;
+import ballerina/sql;
 
+type MonthlyUserData record {|
+        int month;
+        int count;
+    |};
 // DashboardAdminService - RESTful service to provide data for admin dashboard
 @http:ServiceConfig {
     cors: {
@@ -19,18 +24,43 @@ service /dashboard/admin on ln {
         record {|int mealevents_count;|} mealresult = check dbClient->queryRow(`SELECT COUNT(id) AS mealevents_count FROM mealevents`);
         int mealeventsCount = mealresult.mealevents_count;
 
-         record {|int assetrequests_count;|} assetrequestsresult = check dbClient->queryRow(`SELECT COUNT(id) AS assetrequests_count FROM assetrequests`);
+        record {|int assetrequests_count;|} assetrequestsresult = check dbClient->queryRow(`SELECT COUNT(id) AS assetrequests_count FROM assetrequests`);
         int assetrequestsCount = assetrequestsresult.assetrequests_count;
 
-         record {|int maintenance_count;|} maintenanceresult = check dbClient->queryRow(`SELECT COUNT(id) AS maintenance_count FROM maintenance`);
+        record {|int maintenance_count;|} maintenanceresult = check dbClient->queryRow(`SELECT COUNT(id) AS maintenance_count FROM maintenance`);
         int maintenanceCount = maintenanceresult.maintenance_count;
+
+        // Query to get user count by month
+        stream<MonthlyUserData, sql:Error?> monthlyUserStream = dbClient->query(
+            `SELECT EXTRACT(MONTH FROM created_at) AS month, COUNT(id) AS count 
+            FROM users 
+            GROUP BY EXTRACT(MONTH FROM created_at) 
+            ORDER BY month`,
+            MonthlyUserData
+        );
+
+        // Convert stream to array
+        MonthlyUserData[] monthlyUserData = [];
+        check from MonthlyUserData row in monthlyUserStream
+            do {
+                monthlyUserData.push(row);
+            };
+
+        // Create an array for all 12 months, initialized with 0
+        int[] monthlyUserCounts = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]; // Index 0 = Jan, 1 = Feb, ..., 11 = Dec
+
+        // Populate counts for months with data
+        foreach var row in monthlyUserData {
+            // SQL EXTRACT(MONTH) returns 1-12, so adjust to 0-based index
+            monthlyUserCounts[row.month - 1] = row.count;
+        }
 
         return [
             {
                 title: "Total Users",
                 value: userCount,
                 icon: "Users",
-                monthlyData: [150, 160, 170, 165, 180, 195, 210, 220, 230, 240, 255, 270]
+                monthlyData: monthlyUserCounts
             },
             {
                 title: "Meals Served",
@@ -55,6 +85,7 @@ service /dashboard/admin on ln {
 
     // Resource to get data for resource cards
     resource function get resources() returns json|error {
+
         return [
             {
                 title: "Food Supplies",
@@ -79,6 +110,7 @@ service /dashboard/admin on ln {
 
     // Resource to get meal distribution data for pie chart
     resource function get mealdistribution() returns json|error {
+
         return {
             labels: ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"],
             datasets: [
