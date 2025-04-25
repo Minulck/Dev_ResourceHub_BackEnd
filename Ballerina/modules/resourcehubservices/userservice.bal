@@ -12,7 +12,7 @@ public type User record {|
     string email; 
     string phone_number; 
     string password?; 
-    string additional_details; 
+    string additional_details?; 
     string created_at; 
 |};
 

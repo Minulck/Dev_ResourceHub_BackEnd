@@ -303,7 +303,7 @@ service /dashboard/admin on ln {
     foreach var row in allocationData {
         result.push({
             "category": row.category,
-            "allocated":  row.total,
+            "allocated": row.total,
             "total": row.total
         });
     }
