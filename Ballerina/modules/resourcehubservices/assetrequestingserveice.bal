@@ -128,7 +128,7 @@ service /assetrequest on ln {
             assetrequest: assetrequest
         };
     }
-        resource function get dueassets() returns AssetRequest[]|error {
+    resource function get dueassets() returns AssetRequest[]|error {
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
         u.profile_picture_url,
@@ -144,6 +144,34 @@ service /assetrequest on ln {
         JOIN users u ON ar.user_id = u.id
         JOIN assets a ON ar.asset_id = a.id
         WHERE DATEDIFF(ar.handover_date, CURDATE()) < 0
+        ORDER BY remaining_days ASC;`
+        );
+
+        AssetRequest[] assetrequests = [];
+
+        check resultstream.forEach(function(AssetRequest assetrequest) {
+            assetrequests.push(assetrequest);
+        });
+
+        return assetrequests;
+    }
+
+    resource function get dueassets/[int userid]() returns AssetRequest[]|error {
+        stream<AssetRequest, sql:Error?> resultstream = dbClient->query
+        (`SELECT 
+        u.profile_picture_url,
+        u.username,
+        a.id,
+        a.asset_name,
+        a.category,
+        ar.borrowed_date,
+        ar.handover_date,
+        DATEDIFF(ar.handover_date, CURDATE()) AS remaining_days,
+        ar.quantity
+        FROM assetrequests ar
+        JOIN users u ON ar.user_id = u.id
+        JOIN assets a ON ar.asset_id = a.id
+        WHERE DATEDIFF(ar.handover_date, CURDATE()) < 0 AND ar.user_id = ${userid}
         ORDER BY remaining_days ASC;`
         );
 
