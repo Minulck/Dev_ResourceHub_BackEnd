@@ -14,6 +14,18 @@ public type Maintenance record {|
     string username?;
 |};
 
+public type Notification record {|
+    int maintenance_id;
+    int user_id;
+    string name?;
+    string description?;
+    string priorityLevel?;
+    string status?;
+    string request_date?;
+    string profilePicture?;
+    string username?;
+|};
+
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
@@ -94,6 +106,32 @@ service /maintenance on ln {
         }
 
         return {"message": "Maintenance request updated successfully"};
+    }
+
+    resource function get notification() returns Notification[]|error{
+        stream< Notification ,sql:Error?> resultstream = dbClient->query(
+            `select m.request_date,u.username,m.description,m.priority_level AS priorityLevel,m.status,m.name
+            from notification n
+            join users u on n.user_id=u.id
+            join maintenance m on n.maintenance_id=m.id`
+            );
+            Notification[] notifications =[];
+            check resultstream.forEach(function(Notification notification){
+                notifications.push(notification);
+            });
+            return notifications;
+    }
+
+    resource function post addnotification(@http:Payload Notification notification) returns json|error{
+        sql:ExecutionResult result = check dbClient->execute(`
+        insert into notification (user_id,maintenance_id)
+        values(${notification.user_id},${notification.maintenance_id})`
+        );
+         if (result.affectedRowCount == 0) {
+            return error("No Notification found with the given ID");
+        }
+
+        return {"message": "Notification request updated successfully"};
     }
 }
 
