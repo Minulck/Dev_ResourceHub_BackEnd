@@ -77,7 +77,7 @@ service /assetrequest on ln {
     }
 
     resource function post add(@http:Payload AssetRequest assetrequest) returns json|error {
-        io:println("Received Asset Request data: " + assetrequest.toJsonString());
+        io:println("Received Asset Request data : " + assetrequest.toJsonString());
 
         sql:ExecutionResult result = check dbClient->execute(`
             INSERT INTO assetrequests (user_id, asset_id, borrowed_date, handover_date, quantity)
