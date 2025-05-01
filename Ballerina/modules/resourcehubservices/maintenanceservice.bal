@@ -73,7 +73,7 @@ service /maintenance on ln {
             return error("Failed to add maintenance request");
         }
 
-        return {"message": "Maintenance request added successfully"};
+        return {"message": "Maintenance request has been added "};
     }
 
     // DELETE: Remove a maintenance request by ID
@@ -87,7 +87,7 @@ service /maintenance on ln {
             return error("No maintenance found with the given ID");
         }
 
-        return {"message": "Maintenance request deleted successfully"};
+        return {"message": "Maintenance request has been deleted "};
     }
 
     // PUT: Update a maintenance request by ID
@@ -105,7 +105,7 @@ service /maintenance on ln {
             return error("No maintenance found with the given ID");
         }
 
-        return {"message": "Maintenance request updated successfully"};
+        return {"message": "Maintenance request has been updated "};
     }
 
     resource function get notification() returns Notification[]|error{
@@ -131,7 +131,7 @@ service /maintenance on ln {
             return error("No Notification found with the given ID");
         }
 
-        return {"message": "Notification request updated successfully"};
+        return {"message": "Notification request has been updated."};
     }
 }
 

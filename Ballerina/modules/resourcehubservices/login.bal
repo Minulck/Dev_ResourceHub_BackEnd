@@ -2,6 +2,13 @@ import ballerina/http;
 import ballerina/jwt;
 import ballerina/io;
 import ballerina/sql;
+import ballerina/random;
+import ballerina/email;
+
+type ForgotPassword record {
+    string email;
+};
+
 
 // JWT issuer configuration
 jwt:IssuerConfig jwtIssuerConfig = {
@@ -26,6 +33,19 @@ jwt:ValidatorConfig jwtValidatorConfig = {
     clockSkew: 60
 };
 
+function generateSimplePassword(int length) returns string|error {
+    final string LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
+    string[] chars = [];
+
+    // Generate random lowercase characters
+    foreach int _ in 0 ..< length {
+        int randomIndex = check random:createIntInRange(0, LOWERCASE.length());
+        chars.push(LOWERCASE[randomIndex]);
+    }
+
+    // Convert array to string
+    return chars.reduce(function(string acc, string c) returns string => acc + c, "");
+}
 
 @http:ServiceConfig {
     cors: {
@@ -87,4 +107,43 @@ service /auth on ln {
             return error("Unauthorized");
         }
     }
+
+    resource function post resetpassword(@http:Payload ForgotPassword password) returns json|error {
+    // Validate email format (basic check)
+    if !password.email.includes("@") || !password.email.includes(".") {
+        return error("Invalid email format", statusCode = 400);
+    }
+
+    // Generate simple random password
+    string randomPassword = check generateSimplePassword(8);
+
+    // Update password in database
+    sql:ParameterizedQuery updateQuery = `UPDATE users SET password = ${randomPassword} 
+                                        WHERE email = ${password.email}`;
+    sql:ExecutionResult updateResult = check dbClient->execute(updateQuery);
+
+    if updateResult.affectedRowCount == 0 {
+        return error("Failed to reset password", statusCode = 500);
+    }
+
+    // Send email
+    email:Message resetEmail = {
+        to: [password.email],
+        subject: "Your Account Password Reset",
+        body: string `Your temporary password is: ${randomPassword}
+                     Please change your password after logging in.
+                     Login here: http://localhost:5173/login`
+    };
+
+    error? emailResult = emailClient->sendMessage(resetEmail);
+    if emailResult is error {
+        io:println("Error sending password email: ", emailResult.message());
+        // Don't fail the request if email fails, but log it
+    }
+
+    return {
+        message: "Password reset successful. Check your email for the temporary password."
+    };
+    }
+    
 }
