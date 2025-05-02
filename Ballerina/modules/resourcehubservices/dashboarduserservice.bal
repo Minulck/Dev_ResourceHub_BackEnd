@@ -11,7 +11,7 @@ import ballerina/sql;
         allowHeaders: ["Content-Type"]
     }
 }
-service /dashboarduser on ln {
+service /dashboard/user on ln {
 
     // Get user statistics for dashboard
     resource function get stats/[int userId]() returns json|error {
