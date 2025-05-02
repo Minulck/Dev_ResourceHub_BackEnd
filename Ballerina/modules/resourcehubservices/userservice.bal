@@ -1,19 +1,18 @@
 import ballerina/http;
 import ballerina/io;
-import ballerina/random;
 import ballerina/sql;
 import ballerina/email;
 
 public type User record {| 
     int id?; 
     string username; 
-    string profile_picture_url; 
+    string profile_picture_url?; 
     string usertype; 
     string email; 
-    string phone_number; 
+    string phone_number?; 
     string password?; 
     string additional_details?; 
-    string created_at; 
+    string created_at?; 
 |};
 
 @http:ServiceConfig { 
@@ -38,29 +37,16 @@ service /user on ln {
     }
 
     resource function post add(@http:Payload User user) returns json|error { 
-        // Generate a more secure random password 
-        final string LOWERCASE = "abcdefghijklmnopqrstuvwxyz"; 
-        final string UPPERCASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ"; 
-        final string NUMBERS = "0123456789"; 
-        final string SYMBOLS = "!@#$%^&*()-_=+[]{}|;:,.<>?"; 
-        final string ALL_CHARS = LOWERCASE + UPPERCASE + NUMBERS + SYMBOLS; 
-        final int PASSWORD_LENGTH = 12; 
 
-        string randomPassword = ""; 
-        // Corrected foreach loop syntax 
-        foreach int _ in 0 ..< PASSWORD_LENGTH { 
-            // Generate a random index within the bounds of ALL_CHARS 
-            int randomIndex = check random:createIntInRange(0, ALL_CHARS.length()); 
-            // Append the character at the random index to the password 
-            randomPassword += ALL_CHARS.substring(randomIndex, randomIndex + 1); 
-        }
+        // Generate a random password of length 8
+        string randomPassword = check generateSimplePassword(8);
+        
 
-        // Corrected SQL query string interpolation - Use randomPassword directly with ${} syntax
         sql:ExecutionResult result = check dbClient->execute(` 
             insert into 
-            users (username,profile_picture_url,usertype,email,phone_number,password,additional_details,created_at) 
-            values (${user.username},${user.profile_picture_url},${user.usertype},${user.email},${user.phone_number},${randomPassword},${user.additional_details},${user.created_at})
-        `); // Parameters are interpolated directly in the query string
+            users (username,usertype,email,profile_picture_url,phone_number,password,additional_details,created_at) 
+            values (${user.email},${user.usertype},${user.email},'https://uxwing.com/wp-content/themes/uxwing/download/peoples-avatars/man-user-circle-icon.png',NULL,${randomPassword},${user.additional_details},NOW())
+        `); 
 
         if result.affectedRowCount != 0 { 
             // Send the *original* random password to the user, not the hash 
@@ -102,6 +88,22 @@ service /user on ln {
             message: "User deleted successfully" 
         }; 
         
+    }
+
+    resource function PUT details/[int userid](@http:Payload User user) returns json|error{
+        sql:ExecutionResult result = check dbClient->execute(`
+            UPDATE users set usertype = ${user.usertype},additional_details = ${user.additional_details} WHERE id = ${userid}
+        `);
+
+        if result.affectedRowCount == 0 { 
+            return { 
+                message: "User not found" 
+            }; 
+        }
+
+        return { 
+            message: "User updated successfully" 
+        }; 
     }
 
 }
