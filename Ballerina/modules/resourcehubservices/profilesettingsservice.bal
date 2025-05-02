@@ -31,7 +31,7 @@ public type Password record {|
 service /settings on ln {
 
     resource function Get details/[int userid]() returns Profile[]|error {
-        stream<Profile, sql:Error?> resultStream = check dbClient->query(`
+        stream<Profile, sql:Error?> resultStream = dbClient->query(`
                     SELECT username,
                     email,
                     phone_number, 
@@ -94,7 +94,7 @@ service /settings on ln {
 
     resource function PUT password/[int userid](@http:Payload Password password) returns json|error {
         // Query to fetch the current password
-        stream<record {| string password; |}, sql:Error?> result = check dbClient->query(`
+        stream<record {| string password; |}, sql:Error?> result = dbClient->query(`
             SELECT password FROM users WHERE id = ${userid}
         `);
 
