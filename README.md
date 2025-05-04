@@ -48,7 +48,7 @@ The **Resource Hub Backend** is a Ballerina-based API service that manages organ
 ## Project Structure
 
 ```
-/resource_hub_backend/
+/resource_hub_backend/Ballerina
 ├── Ballerina.toml
 ├── main.bal
 ├── Config.toml
@@ -77,8 +77,8 @@ The **Resource Hub Backend** is a Ballerina-based API service that manages organ
 1. **Clone the repository**
 
    ```bash
-   git clone https://github.com/FiveStackDev/Resource_Hub_Backend.git
-   cd Resource_Hub_Backend
+   git clone https://github.com/FiveStackDev/Resource_Hub-ballerina.git
+   cd Resource_Hub-ballerina/Ballerina
    ```
 
 2. **Configure the application**
