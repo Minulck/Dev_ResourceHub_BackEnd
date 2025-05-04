@@ -1,12 +1,12 @@
 import backend.resourcehubservices as resourcehubservices;
 public function main() returns error? {
-    check resourcehubservices:ConnectDatabase();
+    check resourcehubservices:connectDatabase();
     check resourcehubservices:startMealTypeService();
     check resourcehubservices:startMealTimeService();
-    check resourcehubservices:startCalanderService();
+    check resourcehubservices:startCalendarService();
     check resourcehubservices:startAssetService();
-    check resourcehubservices:UserManagementService();
-    check resourcehubservices:maintenancesManagementService();
+    check resourcehubservices:startUserManagementService();
+    check resourcehubservices:startMaintenanceManagementService();
     check resourcehubservices:startDashboardAdminService();
     check resourcehubservices:startDashboardUserService();
 

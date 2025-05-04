@@ -135,6 +135,6 @@ service /maintenance on ln {
     }
 }
 
-public function maintenancesManagementService() returns error? {
+public function startMaintenanceManagementService() returns error? {
     io:println("maintenancesManagement service started on port: 9090");
 }
