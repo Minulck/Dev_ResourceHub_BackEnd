@@ -157,4 +157,3 @@ The following diagram illustrates the database schema used in Resource Hub:
 
 ---
 
-Would you like this saved as a `README.md` file or need help generating `init.sql` based on this schema?
