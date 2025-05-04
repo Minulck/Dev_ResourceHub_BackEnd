@@ -25,3 +25,5 @@ SMTP_PASSWORD="your_smtp_password"
 # API keys
 PDFSHIFT_API_KEY="your_pdfshift_api_key"
 ```
+
+![Database_Diagram](https://github.com/user-attachments/assets/e088cbaa-932e-4030-a9ce-941d1d92ca4c)
