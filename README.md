@@ -50,6 +50,7 @@ The **Resource Hub Backend** is a Ballerina-based API service that manages organ
 ```
 /resource_hub_backend/
 ├── Ballerina.toml
+├── main.bal
 ├── Config.toml
 └── modules/
     └── resourcehubservices/
