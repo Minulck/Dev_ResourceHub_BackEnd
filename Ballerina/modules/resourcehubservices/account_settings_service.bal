@@ -1,5 +1,7 @@
 import ballerina/http;
 import ballerina/sql;
+import ballerina/email;
+
 public type Profile record {|
     string username;
     string profile_picture_url;
@@ -10,6 +12,7 @@ public type Profile record {|
 
 public type Email record {|
     string email;
+    int code?;
 |};
 
 public type Phone record {|
@@ -76,6 +79,30 @@ service /settings on ln {
         } else {
             return error("Failed to update email");
         }
+    }
+
+    resource function post sendEmail(@http:Payload Email email) returns json|error {
+       
+        email:Message resetEmail = {
+        to: [email.email],
+        subject: "Verify Your Email Address to Complete the Update",
+        body: string `Your verification code is: ${email.code ?: "!!error!!"}
+
+Enter this code in the app to verify your email address.
+
+If you didn’t request this, you can safely ignore this message.
+`
+    };
+
+    error? emailResult = emailClient->sendMessage(resetEmail);
+    if emailResult is error {
+        return error("Error sending Code to email: ");
+    }
+
+    return {
+        message: "Code Send successfully. Check your email for the Verification Code."
+    };
+        
     }
 
     resource function PUT phone/[int userid](@http:Payload Phone phone) returns json|error {
