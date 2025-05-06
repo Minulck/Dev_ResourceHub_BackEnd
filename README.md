@@ -245,7 +245,8 @@ CREATE TABLE notification (
 ```
 The following diagram illustrates the database schema used in Resource Hub:
 
-![Database Schema](https://github.com/user-attachments/assets/e088cbaa-932e-4030-a9ce-941d1d92ca4c)
+![Untitled](https://github.com/user-attachments/assets/f71de8a6-d12e-4eb2-8cc2-5219e9e6f07b)
+
 
 ---
 
