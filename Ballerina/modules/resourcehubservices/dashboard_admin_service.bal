@@ -24,7 +24,7 @@ type MonthlyMaintenanceData record {|
 
 type MealDistributionData record {|
     int day_of_week;
-    string meal_name;
+    string mealtime_name;
     int count;
 |};
 
@@ -46,21 +46,21 @@ service /dashboard/admin on ln {
     // Resource to get summary statistics for the dashboard
     resource function get stats() returns json|error {
         // Existing counts
-        record {|int user_count;|} userResult = check dbClient->queryRow(`SELECT COUNT(id) AS user_count FROM users`);
+        record {|int user_count;|} userResult = check dbClient->queryRow(`SELECT COUNT(user_id) AS user_count FROM users`);
         int userCount = userResult.user_count;
 
-        record {|int mealevents_count;|} mealResult = check dbClient->queryRow(`SELECT COUNT(id) AS mealevents_count FROM mealevents`);
+        record {|int mealevents_count;|} mealResult = check dbClient->queryRow(`SELECT COUNT(requestedmeal_id) AS mealevents_count FROM requestedmeals`);
         int mealEventsCount = mealResult.mealevents_count;
 
-        record {|int assetrequests_count;|} assetRequestsResult = check dbClient->queryRow(`SELECT COUNT(id) AS assetrequests_count FROM assetrequests`);
+        record {|int assetrequests_count;|} assetRequestsResult = check dbClient->queryRow(`SELECT COUNT(requestedasset_id) AS assetrequests_count FROM requestedassets`);
         int assetRequestsCount = assetRequestsResult.assetrequests_count;
 
-        record {|int maintenance_count;|} maintenanceResult = check dbClient->queryRow(`SELECT COUNT(id) AS maintenance_count FROM maintenance`);
+        record {|int maintenance_count;|} maintenanceResult = check dbClient->queryRow(`SELECT COUNT(maintenance_id) AS maintenance_count FROM maintenance`);
         int maintenanceCount = maintenanceResult.maintenance_count;
 
         // Query to get user count by month
         stream<MonthlyUserData, sql:Error?> monthlyUserStream = dbClient->query(
-        `SELECT EXTRACT(MONTH FROM created_at) AS month, COUNT(id) AS count 
+        `SELECT EXTRACT(MONTH FROM created_at) AS month, COUNT(user_id) AS count 
          FROM users 
          GROUP BY EXTRACT(MONTH FROM created_at) 
          ORDER BY month`,
@@ -82,8 +82,8 @@ service /dashboard/admin on ln {
 
         // Query to get meal events count by month
         stream<MonthlyMealData, sql:Error?> monthlyMealStream = dbClient->query(
-        `SELECT EXTRACT(MONTH FROM meal_request_date) AS month, COUNT(id) AS count 
-         FROM mealevents 
+        `SELECT EXTRACT(MONTH FROM meal_request_date) AS month, COUNT(requestedmeal_id) AS count 
+         FROM requestedmeals 
          GROUP BY EXTRACT(MONTH FROM meal_request_date) 
          ORDER BY month`,
         MonthlyMealData
@@ -104,9 +104,9 @@ service /dashboard/admin on ln {
 
         // Query to get asset requests count by month
         stream<MonthlyAssetRequestData, sql:Error?> monthlyAssetRequestStream = dbClient->query(
-        `SELECT EXTRACT(MONTH FROM borrowed_date) AS month, COUNT(id) AS count 
-         FROM assetrequests 
-         GROUP BY EXTRACT(MONTH FROM borrowed_date) 
+        `SELECT EXTRACT(MONTH FROM submitted_date) AS month, COUNT(requestedasset_id) AS count 
+         FROM requestedassets
+         GROUP BY EXTRACT(MONTH FROM submitted_date) 
          ORDER BY month`,
         MonthlyAssetRequestData
         );
@@ -126,9 +126,9 @@ service /dashboard/admin on ln {
 
         // Query to get maintenance count by month
         stream<MonthlyMaintenanceData, sql:Error?> monthlyMaintenanceStream = dbClient->query(
-        `SELECT EXTRACT(MONTH FROM request_date) AS month, COUNT(id) AS count 
+        `SELECT EXTRACT(MONTH FROM submitted_date) AS month, COUNT(maintenance_id) AS count 
          FROM maintenance 
-         GROUP BY EXTRACT(MONTH FROM request_date) 
+         GROUP BY EXTRACT(MONTH FROM submitted_date) 
          ORDER BY month`,
         MonthlyMaintenanceData
         );
@@ -204,7 +204,7 @@ service /dashboard/admin on ln {
     resource function get mealdistribution() returns json|error {
     // Query to get all meal types from mealtimes
     stream<MealTime, sql:Error?> mealTimeStream = dbClient->query(
-        `SELECT id, meal_name as mealName FROM mealtimes ORDER BY id`,
+        `SELECT mealtime_id, mealtime_name FROM mealtimes ORDER BY mealtime_id`,
         MealTime
     );
 
@@ -217,11 +217,11 @@ service /dashboard/admin on ln {
 
     // Query to get meal event counts by day of week and meal type
     stream<MealDistributionData, sql:Error?> mealDistributionStream = dbClient->query(
-        `SELECT DAYOFWEEK(meal_request_date) AS day_of_week, mealtimes.meal_name, COUNT(mealevents.id) AS count 
-         FROM mealevents 
-         JOIN mealtimes ON mealevents.meal_time = mealtimes.id 
-         GROUP BY DAYOFWEEK(meal_request_date), mealtimes.meal_name 
-         ORDER BY day_of_week, mealtimes.meal_name`,
+        `SELECT DAYOFWEEK(meal_request_date) AS day_of_week, mealtimes.mealtime_name, COUNT(requestedmeal_id) AS count 
+         FROM requestedmeals 
+         JOIN mealtimes ON requestedmeals.meal_time_id = mealtimes.mealtime_id
+         GROUP BY DAYOFWEEK(meal_request_date), mealtimes.mealtime_name
+         ORDER BY day_of_week, mealtimes.mealtime_name`,
         MealDistributionData
     );
 
@@ -235,7 +235,7 @@ service /dashboard/admin on ln {
     // Initialize a map to store data arrays for each meal type
     map<int[]> mealDataMap = {};
     foreach var meal in mealTimes {
-        mealDataMap[meal.mealName] = [0, 0, 0, 0, 0, 0, 0]; // 7 days: Sun, Mon, Tue, Wed, Thu, Fri, Sat
+        mealDataMap[meal.mealtime_name] = [0, 0, 0, 0, 0, 0, 0]; // 7 days: Sun, Mon, Tue, Wed, Thu, Fri, Sat
     }
 
     // Populate data arrays based on meal_name and day_of_week
@@ -243,8 +243,8 @@ service /dashboard/admin on ln {
         // DAYOFWEEK returns 1=Sunday, 2=Monday, ..., 7=Saturday
         // Map to array index: 1->0 (Sun), 2->1 (Mon), ..., 7->6 (Sat)
         int arrayIndex = row.day_of_week - 1;
-        if (mealDataMap.hasKey(row.meal_name)) {
-            int[]? dataArray = mealDataMap[row.meal_name];
+        if (mealDataMap.hasKey(row.mealtime_name)) {
+            int[]? dataArray = mealDataMap[row.mealtime_name];
             if (dataArray is int[]) {
                 dataArray[arrayIndex] = row.count;
             }
@@ -258,7 +258,7 @@ service /dashboard/admin on ln {
 
     // Create datasets dynamically
     foreach var meal in mealTimes {
-        string mealName = meal.mealName;
+        string mealName = meal.mealtime_name;
         int[]? dataArray = mealDataMap[mealName];
         if (dataArray is int[]) {
             datasets.push({

@@ -4,14 +4,14 @@ import ballerina/io;
 import ballerina/sql;
 
 public type User record {| 
-    int id?; 
+    int user_id?; 
     string username; 
     string profile_picture_url?; 
     string usertype; 
     string email; 
     string phone_number?; 
     string password?; 
-    string additional_details?; 
+    string bio; 
     string created_at?; 
 |};
 
@@ -43,8 +43,8 @@ service /user on ln {
 
         sql:ExecutionResult result = check dbClient->execute(` 
             insert into 
-            users (username,usertype,email,profile_picture_url,phone_number,password,additional_details,created_at) 
-            values (${user.email},${user.usertype},${user.email},'https://uxwing.com/wp-content/themes/uxwing/download/peoples-avatars/man-user-circle-icon.png',NULL,${randomPassword},${user.additional_details},NOW()) 
+            users (username,usertype,email,profile_picture_url,phone_number,password,bio,created_at) 
+            values (${user.email},${user.usertype},${user.email},'https://uxwing.com/wp-content/themes/uxwing/download/peoples-avatars/man-user-circle-icon.png',NULL,${randomPassword},${user.bio},NOW()) 
         `); 
 
         if result.affectedRowCount != 0 { 
@@ -82,7 +82,7 @@ The Team`
 
     resource function delete details/[int id]() returns json|error { 
         sql:ExecutionResult result = check dbClient->execute(` 
-            DELETE FROM users WHERE id = ${id} 
+            DELETE FROM users WHERE user_id = ${id} 
         `); 
 
         if result.affectedRowCount == 0 { 
@@ -99,7 +99,7 @@ The Team`
 
     resource function PUT details/[int userid](@http:Payload User user) returns json|error { 
         sql:ExecutionResult result = check dbClient->execute(` 
-            UPDATE users set usertype = ${user.usertype},additional_details = ${user.additional_details} WHERE id = ${userid} 
+            UPDATE users set usertype = ${user.usertype},bio = ${user.bio} WHERE user_id = ${userid} 
         `); 
 
         if result.affectedRowCount == 0 { 

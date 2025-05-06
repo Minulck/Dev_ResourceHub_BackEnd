@@ -4,9 +4,9 @@ import ballerina/io;
 
 
 public type MealTime record {|
-    int id?;
-    string mealName;
-    string mealImageUrl;
+    int mealtime_id?;
+    string mealtime_name;
+    string mealtime_image_url;
 |};
 @http:ServiceConfig {
     cors: {
@@ -20,7 +20,7 @@ service /mealtime on ln{
      // MealTime endpoints
     resource function get details() returns MealTime[]|error {
         stream<MealTime, sql:Error?> resultStream = 
-            dbClient->query(`SELECT id, meal_name as mealName, meal_image_url as mealImageUrl FROM mealtimes`);
+            dbClient->query(`SELECT mealtime_id,mealtime_name , mealtime_image_url FROM mealtimes`);
         
         MealTime[] mealtimes = [];
         check resultStream.forEach(function(MealTime meal) {
@@ -34,13 +34,13 @@ service /mealtime on ln{
         io:println("Received meal time data: " + mealTime.toJsonString());
 
         sql:ExecutionResult result = check dbClient->execute(`
-            INSERT INTO mealtimes (meal_name, meal_image_url)
-            VALUES (${mealTime.mealName}, ${mealTime.mealImageUrl})
+            INSERT INTO mealtimes (mealtime_name, mealtime_image_url)
+            VALUES (${mealTime.mealtime_name}, ${mealTime.mealtime_image_url})
         `);
 
         int|string? lastInsertId = result.lastInsertId;
         if lastInsertId is int {
-            mealTime.id = lastInsertId;
+            mealTime.mealtime_id = lastInsertId;
         }
 
         return {
@@ -52,8 +52,8 @@ service /mealtime on ln{
     resource function put details/[int id](@http:Payload MealTime mealTime) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE mealtimes 
-            SET meal_name = ${mealTime.mealName}, meal_image_url = ${mealTime.mealImageUrl}
-            WHERE id = ${id}
+            SET mealtime_name = ${mealTime.mealtime_name}, mealtime_image_url = ${mealTime.mealtime_image_url}
+            WHERE mealtime_id = ${id}
         `);
 
         if result.affectedRowCount == 0 {
@@ -70,7 +70,7 @@ service /mealtime on ln{
 
     resource function delete details/[int id]() returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
-            DELETE FROM mealtimes WHERE id = ${id}
+            DELETE FROM mealtimes WHERE mealtime_id = ${id}
         `);
 
         if result.affectedRowCount == 0 {
