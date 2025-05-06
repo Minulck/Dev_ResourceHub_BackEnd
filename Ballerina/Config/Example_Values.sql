@@ -1,3 +1,5 @@
+USE resource_hub;
+
 -- Insert 100 Users (50 Admin, 50 User)
 INSERT INTO users (username, profile_picture_url, usertype, email, phone_number, password, bio) VALUES
 ('admin1', 'https://img.freepik.com/free-vector/woman-with-braided-hair-illustration_1308-174675.jpg', 'Admin', 'admin1@example.com', '1234567890', 'password123', 'Admin user'),
