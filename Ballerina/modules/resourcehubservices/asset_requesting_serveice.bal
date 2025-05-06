@@ -122,7 +122,7 @@ service /assetrequest on ln {
     resource function put details/[int id](@http:Payload AssetRequest assetrequest) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE requestedassets 
-            SET  handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity} , status = ${assetrequest.status}
+            SET  handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity} , status = ${assetrequest.status},is_returning = ${assetrequest.is_returning}
             WHERE requestedasset_id = ${id}
         `);
 
