@@ -1,3 +1,7 @@
+-- Database
+CREATE DATABASE resource_hub;
+USE resource_hub;
+
 -- Users Table
 CREATE TABLE users (
     user_id INT AUTO_INCREMENT PRIMARY KEY,
