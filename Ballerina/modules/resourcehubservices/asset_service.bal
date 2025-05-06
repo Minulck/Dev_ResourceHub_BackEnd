@@ -3,12 +3,13 @@ import ballerina/sql;
 import ballerina/io;
 
 public type Asset record {|
-    int id?;
+    int asset_id?;
     string asset_name;
     string category;
     int quantity;
     string condition_type;
     string location;
+    boolean is_available?;
 |};
 
 @http:ServiceConfig {
@@ -52,8 +53,8 @@ resource function post add(@http:Payload Asset asset) returns json|error {
      resource function put details/[int id](@http:Payload Asset asset) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE assets 
-            SET asset_name = ${asset.asset_name}, category = ${asset.category}, quantity = ${asset.quantity}, condition_type = ${asset.condition_type}, location = ${asset.location}
-            WHERE id = ${id}
+            SET asset_name = ${asset.asset_name}, category = ${asset.category}, quantity = ${asset.quantity}, condition_type = ${asset.condition_type}, location = ${asset.location}, is_available = ${asset.is_available} 
+            WHERE asset_id = ${id}
         `);
 
         if result.affectedRowCount == 0 {
@@ -70,7 +71,7 @@ resource function post add(@http:Payload Asset asset) returns json|error {
 
     resource function delete details/[int id]() returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
-            DELETE FROM assets WHERE id = ${id}
+            DELETE FROM assets WHERE asset_id = ${id}
         `);
 
         if result.affectedRowCount == 0 {

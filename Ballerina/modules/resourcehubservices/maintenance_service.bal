@@ -3,13 +3,13 @@ import ballerina/io;
 import ballerina/sql;
 
 public type Maintenance record {|
-    int id?;
+    int maintenance_id?;
     int user_id;
     string? name;
     string description;
     string priorityLevel;
     string status?;
-    string request_date?;
+    string submitted_date?;
     string profilePicture?;
     string username?;
 |};
@@ -21,7 +21,7 @@ public type Notification record {|
     string description?;
     string priorityLevel?;
     string status?;
-    string request_date?;
+    string submitted_date?;
     string profilePicture?;
     string username?;
 |};
@@ -44,11 +44,11 @@ service /maintenance on ln {
                 m.description,
                 m.priority_level AS priorityLevel,
                 m.status,
-                m.request_date,
-                m.id ,
-                u.id as user_id
+                m.submitted_date,
+                m.maintenance_id ,
+                u.user_id as user_id
                 FROM maintenance m
-                JOIN users u ON m.user_id = u.id;
+                JOIN users u ON m.user_id = u.user_id;
         `);
 
         Maintenance[] maintenances = [];
@@ -64,7 +64,7 @@ service /maintenance on ln {
         
         // Use parameterized query to prevent SQL injection
         sql:ExecutionResult result = check dbClient->execute(
-            `INSERT INTO maintenance (name, user_id, description, priority_level, status, request_date)
+            `INSERT INTO maintenance (name, user_id, description, priority_level, status, submitted_date)
                                    VALUES (${maintenance.name}, ${maintenance.user_id}, ${maintenance.description}, 
                                            ${maintenance.priorityLevel}, 'Pending', NOW())`
         );
@@ -80,7 +80,7 @@ service /maintenance on ln {
     resource function delete details/[int id]() returns json|error {
 
         sql:ExecutionResult result = check dbClient->execute(
-            `DELETE FROM maintenance WHERE id = ${id}`
+            `DELETE FROM maintenance WHERE maintenance_id = ${id}`
         );
 
         if (result.affectedRowCount == 0) {
@@ -98,7 +98,7 @@ service /maintenance on ln {
             SET description = ${maintenance.description}, 
             priority_level = ${maintenance.priorityLevel}, 
             status = ${maintenance.status ?: "Pending"} 
-            WHERE id = ${id}`
+            WHERE maintenance_id = ${id}`
         );
 
         if (result.affectedRowCount == 0) {
@@ -110,10 +110,10 @@ service /maintenance on ln {
 
     resource function get notification() returns Notification[]|error{
         stream< Notification ,sql:Error?> resultstream = dbClient->query(
-            `select m.request_date,u.username,m.description,m.priority_level AS priorityLevel,m.status,m.name
+            `select m.submitted_date,u.username,m.description,m.priority_level AS priorityLevel,m.status,m.name
             from notification n
-            join users u on n.user_id=u.id
-            join maintenance m on n.maintenance_id=m.id`
+            join users u on n.user_id=u.user_id
+            join maintenance m on n.maintenance_id=m.maintenance_id`
             );
             Notification[] notifications =[];
             check resultstream.forEach(function(Notification notification){
@@ -128,7 +128,7 @@ service /maintenance on ln {
         values(${notification.user_id},${notification.maintenance_id})`
         );
          if (result.affectedRowCount == 0) {
-            return error("No Notification found with the given ID");
+            return error("Failed to add notification");
         }
 
         return {"message": "Notification request has been updated."};
@@ -136,5 +136,5 @@ service /maintenance on ln {
 }
 
 public function startMaintenanceManagementService() returns error? {
-    io:println("maintenancesManagement service started on port: 9090");
+    io:println("Maintenance Management service started on port: 9090");
 }

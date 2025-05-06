@@ -3,23 +3,25 @@ import ballerina/io;
 import ballerina/sql;
 
 public type AssetRequest record {|
-    int id?;
-    int userid;
+    int requestedasset_id?;
+    int user_id;
     int asset_id;
     string category?;
-    string borrowed_date;
+    string submitted_date ;
     string handover_date;
     int remaining_days?;
     int quantity;
     string profile_picture_url?;
     string username?;
+    string status?;
+    boolean is_returning?;
     string asset_name?;
 |};
 
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
-        allowMethods: ["GET", "POST", "DELETE", "OPTION", "PUT"],
+        allowMethods: ["GET", "POST", "DELETE", "OPTIONS", "PUT"],
         allowHeaders: ["Content-Type"]
     }
 }
@@ -28,18 +30,22 @@ service /assetrequest on ln {
     resource function get details() returns AssetRequest[]|error {
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
-         u.profile_picture_url,
+        ra.requestedasset_id,
+        u.user_id,
+        u.profile_picture_url,
         u.username,
-        a.id,
+        a.asset_id,
         a.asset_name,
         a.category,
-        ar.borrowed_date,
-        ar.handover_date,
-        DATEDIFF(ar.handover_date, CURDATE()) AS remaining_days,
-        ar.quantity
-        FROM assetrequests ar
-        JOIN users u ON ar.user_id = u.id
-        JOIN assets a ON ar.asset_id = a.id;`);
+        ra.submitted_date ,
+        ra.handover_date,
+        ra.status,
+        ra.is_returning,
+        DATEDIFF(ra.handover_date, CURDATE()) AS remaining_days,
+        ra.quantity
+        FROM requestedassets ra
+        JOIN users u ON ra.user_id = u.user_id
+        JOIN assets a ON ra.asset_id = a.asset_id;`);
 
         AssetRequest[] assetrequests = [];
 
@@ -53,19 +59,23 @@ service /assetrequest on ln {
     resource function get details/[int userid]() returns AssetRequest[]|error {
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
-         u.profile_picture_url,
+        ra.requestedasset_id,
+        u.user_id,
+        u.profile_picture_url,
         u.username,
-        a.id,
+        a.asset_id,
         a.asset_name,
         a.category,
-        ar.borrowed_date,
-        ar.handover_date,
-        DATEDIFF(ar.handover_date, CURDATE()) AS remaining_days,
-        ar.quantity
-        FROM assetrequests ar
-        JOIN users u ON ar.user_id = u.id
-        JOIN assets a ON ar.asset_id = a.id
-        where user_id=${userid};`);
+        ra.submitted_date ,
+        ra.handover_date,
+        ra.status,
+        ra.is_returning,
+        DATEDIFF(ra.handover_date, CURDATE()) AS remaining_days,
+        ra.quantity
+        FROM requestedassets ra
+        JOIN users u ON ra.user_id = u.user_id
+        JOIN assets a ON ra.asset_id = a.asset_id
+        where ra.user_id=${userid};`);
 
         AssetRequest[] assetrequests = [];
 
@@ -80,13 +90,12 @@ service /assetrequest on ln {
         io:println("Received Asset Request data :" + assetrequest.toJsonString());
 
         sql:ExecutionResult result = check dbClient->execute(`
-            INSERT INTO assetrequests (user_id, asset_id, borrowed_date, handover_date, quantity)
-            VALUES (${assetrequest.userid}, ${assetrequest.asset_id}, ${assetrequest.borrowed_date}, ${assetrequest.handover_date}, ${assetrequest.quantity})
+            INSERT INTO requestedassets (user_id, asset_id, submitted_date , handover_date, quantity,is_returning)
+            VALUES (${assetrequest.user_id}, ${assetrequest.asset_id}, ${assetrequest.submitted_date }, ${assetrequest.handover_date}, ${assetrequest.quantity},${assetrequest.is_returning})
         `);
 
-        int|string? lastInsertId = result.lastInsertId;
-        if lastInsertId is int {
-            assetrequest.id = lastInsertId;
+        if result.affectedRowCount == 0 {
+            return error("Failed to add asset request");
         }
 
         return {
@@ -97,7 +106,7 @@ service /assetrequest on ln {
 
     resource function delete details/[int id]() returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
-            DELETE FROM assetrequests WHERE id = ${id}
+            DELETE FROM requestedassets WHERE requestedasset_id = ${id}
         `);
 
         if result.affectedRowCount == 0 {
@@ -112,9 +121,9 @@ service /assetrequest on ln {
 
     resource function put details/[int id](@http:Payload AssetRequest assetrequest) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
-            UPDATE assetrequests 
-            SET user_id = ${assetrequest.userid}, asset_id = ${assetrequest.asset_id}, borrowed_date = ${assetrequest.borrowed_date}, handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity}
-            WHERE id = ${id}
+            UPDATE requestedassets 
+            SET  handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity} , status = ${assetrequest.status}
+            WHERE requestedasset_id = ${id}
         `);
 
         if result.affectedRowCount == 0 {
@@ -133,17 +142,19 @@ service /assetrequest on ln {
         (`SELECT 
         u.profile_picture_url,
         u.username,
-        a.id,
+        a.asset_id,
         a.asset_name,
         a.category,
-        ar.borrowed_date,
-        ar.handover_date,
-        DATEDIFF(ar.handover_date, CURDATE()) AS remaining_days,
-        ar.quantity
-        FROM assetrequests ar
-        JOIN users u ON ar.user_id = u.id
-        JOIN assets a ON ar.asset_id = a.id
-        WHERE DATEDIFF(ar.handover_date, CURDATE()) < 0
+        ra.submitted_date ,
+        ra.handover_date,
+        DATEDIFF(ra.handover_date, CURDATE()) AS remaining_days,
+        ra.quantity
+        FROM requestedassets  ra
+        JOIN users u ON ra.user_id = u.user_id
+        JOIN assets a ON ra.asset_id = a.asset_id
+        WHERE DATEDIFF(ra.handover_date, CURDATE()) < 0
+        AND ra.is_returning = false
+        AND ra.status != 'Pending'
         ORDER BY remaining_days ASC;`
         );
 
@@ -161,17 +172,19 @@ service /assetrequest on ln {
         (`SELECT 
         u.profile_picture_url,
         u.username,
-        a.id,
+        a.asset_id,
         a.asset_name,
         a.category,
-        ar.borrowed_date,
-        ar.handover_date,
-        DATEDIFF(ar.handover_date, CURDATE()) AS remaining_days,
-        ar.quantity
-        FROM assetrequests ar
-        JOIN users u ON ar.user_id = u.id
-        JOIN assets a ON ar.asset_id = a.id
-        WHERE DATEDIFF(ar.handover_date, CURDATE()) < 0 AND ar.user_id = ${userid}
+        ra.submitted_date ,
+        ra.handover_date,
+        DATEDIFF(ra.handover_date, CURDATE()) AS remaining_days,
+        ra.quantity
+        FROM requestedassets ra
+        JOIN users u ON ra.user_id = u.user_id
+        JOIN assets a ON ra.asset_id = a.asset_id
+        WHERE DATEDIFF(ra.handover_date, CURDATE()) < 0 AND ra.user_id = ${userid}
+        AND ra.is_returning = false
+        AND ra.status != 'Pending'
         ORDER BY remaining_days ASC;`
         );
 

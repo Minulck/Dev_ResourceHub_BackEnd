@@ -5,7 +5,7 @@ import ballerina/email;
 public type Profile record {|
     string username;
     string profile_picture_url;
-    string additional_details?;
+    string bio?;
     string email?;
     string phone_number?;
 |};
@@ -39,9 +39,9 @@ service /settings on ln {
                     email,
                     phone_number, 
                     profile_picture_url, 
-                    additional_details 
+                    bio 
                     FROM users
-                    WHERE id = ${userid}`);
+                    WHERE user_id = ${userid}`);
 
         Profile[] profiles = [];
 
@@ -56,8 +56,8 @@ service /settings on ln {
             UPDATE users SET 
             username = ${profile.username}, 
             profile_picture_url = ${profile.profile_picture_url}, 
-            additional_details = ${profile.additional_details} 
-            WHERE id = ${userid}
+            bio = ${profile.bio} 
+            WHERE user_id = ${userid}
         `);
 
         if result.affectedRowCount > 0 {
@@ -71,7 +71,7 @@ service /settings on ln {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE users SET 
             email = ${email.email} 
-            WHERE id = ${userid}
+            WHERE user_id = ${userid}
         `);
 
         if result.affectedRowCount > 0 {
@@ -109,7 +109,7 @@ If you didn’t request this, you can safely ignore this message.
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE users SET 
             phone_number = ${phone.phone_number} 
-            WHERE id = ${userid}
+            WHERE user_id = ${userid}
         `);
 
         if result.affectedRowCount > 0 {
@@ -122,7 +122,7 @@ If you didn’t request this, you can safely ignore this message.
     resource function PUT password/[int userid](@http:Payload Password password) returns json|error {
         // Query to fetch the current password
         stream<record {| string password; |}, sql:Error?> result = dbClient->query(`
-            SELECT password FROM users WHERE id = ${userid}
+            SELECT password FROM users WHERE user_id = ${userid}
         `);
 
         string? storedPassword = null;
@@ -141,7 +141,7 @@ If you didn’t request this, you can safely ignore this message.
         sql:ExecutionResult updateResult = check dbClient->execute(`
             UPDATE users SET 
             password = ${password.new_password} 
-            WHERE id = ${userid}
+            WHERE user_id = ${userid}
         `);
 
         if updateResult.affectedRowCount > 0 {

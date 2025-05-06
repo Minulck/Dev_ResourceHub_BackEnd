@@ -17,8 +17,8 @@ service /dashboard/user on ln {
     resource function get stats/[int userId]() returns json|error {
         // Query for meals today (assuming meal_request_date is a timestamp)
         record {|int meals_today;|} mealsTodayResult = check dbClient->queryRow(
-            `SELECT COUNT(id) AS meals_today 
-             FROM mealevents 
+            `SELECT COUNT(requestedmeal_id) AS meals_today 
+             FROM requestedmeals 
              WHERE user_id = ${userId} 
              AND DATE(meal_request_date) = CURRENT_DATE`
         );
@@ -26,15 +26,15 @@ service /dashboard/user on ln {
 
         // Query for total assets borrowed by the user
         record {|int assets_count;|} assetsResult = check dbClient->queryRow(
-            `SELECT COUNT(id) AS assets_count 
-             FROM assetrequests 
+            `SELECT COUNT(requestedasset_id) AS assets_count 
+             FROM requestedassets
              WHERE user_id = ${userId}`
         );
         int assetsCount = assetsResult.assets_count;
 
         // Query for total maintenance requests by the user
         record {|int maintenance_count;|} maintenanceResult = check dbClient->queryRow(
-            `SELECT COUNT(id) AS maintenance_count 
+            `SELECT COUNT(maintenance_id) AS maintenance_count 
              FROM maintenance 
              WHERE user_id = ${userId}`
         );
@@ -42,8 +42,8 @@ service /dashboard/user on ln {
 
         // Query for monthly meal counts
         stream<record {|int month; int count;|}, sql:Error?> monthlyMealStream = dbClient->query(
-            `SELECT EXTRACT(MONTH FROM meal_request_date) AS month, COUNT(id) AS count 
-             FROM mealevents 
+            `SELECT EXTRACT(MONTH FROM meal_request_date) AS month, COUNT(requestedmeal_id) AS count 
+             FROM requestedmeals
              WHERE user_id = ${userId} 
              GROUP BY EXTRACT(MONTH FROM meal_request_date) 
              ORDER BY month`
@@ -56,10 +56,10 @@ service /dashboard/user on ln {
 
         // Query for monthly asset request counts
         stream<record {|int month; int count;|}, sql:Error?> monthlyAssetStream = dbClient->query(
-            `SELECT EXTRACT(MONTH FROM borrowed_date) AS month, COUNT(id) AS count 
-             FROM assetrequests 
+            `SELECT EXTRACT(MONTH FROM submitted_date) AS month, COUNT(requestedasset_id) AS count 
+             FROM requestedassets
              WHERE user_id = ${userId} 
-             GROUP BY EXTRACT(MONTH FROM borrowed_date) 
+             GROUP BY EXTRACT(MONTH FROM submitted_date) 
              ORDER BY month`
         );
         int[] assetsMonthlyData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -70,10 +70,10 @@ service /dashboard/user on ln {
 
         // Query for monthly maintenance request counts
         stream<record {|int month; int count;|}, sql:Error?> monthlyMaintenanceStream = dbClient->query(
-            `SELECT EXTRACT(MONTH FROM request_date) AS month, COUNT(id) AS count 
+            `SELECT EXTRACT(MONTH FROM submitted_date) AS month, COUNT(maintenance_id) AS count 
              FROM maintenance 
              WHERE user_id = ${userId} 
-             GROUP BY EXTRACT(MONTH FROM request_date) 
+             GROUP BY EXTRACT(MONTH FROM submitted_date) 
              ORDER BY month`
         );
         int[] maintenanceMonthlyData = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
@@ -101,12 +101,12 @@ service /dashboard/user on ln {
 
         // Fetch the last meal request
         stream<record {|
-            string id;
-            string meal_type;
+            string requestedmeal_id;
+            string meal_type_id;
             time:Date meal_request_date;
         |}, sql:Error?> mealStream = dbClient->query(
-            `SELECT id, meal_type, meal_request_date 
-             FROM mealevents 
+            `SELECT requestedmeal_id, meal_type_id, meal_request_date 
+             FROM requestedmeals 
              WHERE user_id = ${userId} 
              ORDER BY meal_request_date DESC 
              LIMIT 1`
@@ -118,34 +118,34 @@ service /dashboard/user on ln {
                                 meal.meal_request_date.month.toString().padStart(2, "0") + "-" +
                                 meal.meal_request_date.day.toString().padStart(2, "0") ;
                 activities.push({
-                    "id": meal.id,
+                    "id": meal.requestedmeal_id,
                     "type": "meal",
                     "title": "Last Meal Request",
-                    "description": "Your " + meal.meal_type + " request has been processed",
+                    "description": "Your " + meal.meal_type_id + " request has been processed",
                     "timestamp": dateStr
                 });
             };
 
         // Fetch the last maintenance request
         stream<record {|
-            string id;
+            string maintenance_id;
             string description;
-            time:Date request_date;
+            time:Date submitted_date;
         |}, sql:Error?> maintenanceStream = dbClient->query(
-            `SELECT id, description, request_date 
+            `SELECT  maintenance_id, description, submitted_date 
              FROM maintenance 
              WHERE user_id = ${userId} 
-             ORDER BY request_date DESC 
+             ORDER BY submitted_date DESC 
              LIMIT 1`
         );
         check from var maintenance in maintenanceStream
             do {
                 // Convert time:Date to string
-                string dateStr = maintenance.request_date.year.toString() + "-" +
-                                maintenance.request_date.month.toString().padStart(2, "0") + "-" +
-                                maintenance.request_date.day.toString().padStart(2, "0") ;
+                string dateStr = maintenance.submitted_date.year.toString() + "-" +
+                                maintenance.submitted_date.month.toString().padStart(2, "0") + "-" +
+                                maintenance.submitted_date.day.toString().padStart(2, "0") ;
                 activities.push({
-                    "id": maintenance.id,
+                    "id": maintenance.maintenance_id,
                     "type": "maintenance",
                     "title": "Last Maintenance notified",
                     "description": "Your maintenance request for " + maintenance.description + " has been processed",
@@ -155,25 +155,25 @@ service /dashboard/user on ln {
 
         // Fetch the last asset request
         stream<record {|
-            string id;
+            string requestedasset_id;
             string asset_name;
-            time:Date borrowed_date;
+            time:Date submitted_date;
         |}, sql:Error?> assetStream = dbClient->query(
-            `SELECT ar.id, a.asset_name, borrowed_date 
-             FROM assetrequests ar 
-             join assets a on a.id=ar.asset_id
+            `SELECT ar.requestedasset_id, a.asset_name, submitted_date 
+             FROM requestedassets ar 
+             join assets a on a.asset_id=ar.asset_id
              WHERE user_id = ${userId} 
-             ORDER BY borrowed_date DESC 
+             ORDER BY submitted_date DESC 
              LIMIT 1`
         );
         check from var asset in assetStream
             do {
                 // Convert time:Date to string
-                string dateStr = asset.borrowed_date.year.toString() + "-" +
-                                asset.borrowed_date.month.toString().padStart(2, "0") + "-" +
-                                asset.borrowed_date.day.toString().padStart(2, "0") ;
+                string dateStr = asset.submitted_date.year.toString() + "-" +
+                                asset.submitted_date.month.toString().padStart(2, "0") + "-" +
+                                asset.submitted_date.day.toString().padStart(2, "0") ;
                 activities.push({
-                    "id": asset.id,
+                    "id": asset.requestedasset_id,
                     "type": "asset",
                     "title": "Last Asset Request",
                     "description": asset.asset_name + " has been assigned to you",
