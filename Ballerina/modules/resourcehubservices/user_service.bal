@@ -54,13 +54,13 @@ service /user on ln {
                 subject: "Your Account Login Password", 
                 body: string `Hello,
 
-Welcome to **ResourceHub**! We're excited to have you on board.
+Welcome to ResourceHub ! We're excited to have you on board.
 
-Your temporary login password is: **${randomPassword}**
+Your temporary login password is: ${randomPassword}
 
 For security reasons, please log in using the link below and change your password immediately:
 
-[Log In to ResourceHub](https://resourcehub-fivestackdev.vercel.app/)
+[ Log In to ResourceHub ] : (https://resourcehub-fivestackdev.vercel.app/)
 
 If you did not request this account, please disregard this message.
 
