@@ -52,15 +52,20 @@ service /user on ln {
             email:Message emailMsg = { 
                 to: [user.email], 
                 subject: "Your Account Login Password", 
-                body: string `Welcome to our platform! Your temporary password is: ${randomPassword} 
+                body: string `Hello,
 
-Please change your password after logging in for security purposes. 
-You can log in here: https://resourcehub-fivestackdev.vercel.app/ 
+Welcome to **ResourceHub**! We're excited to have you on board.
 
-If you did not request this, please ignore this message. 
+Your temporary login password is: **${randomPassword}**
 
-Best regards, 
-The Team` 
+For security reasons, please log in using the link below and change your password immediately:
+
+[Log In to ResourceHub](https://resourcehub-fivestackdev.vercel.app/)
+
+If you did not request this account, please disregard this message.
+
+Best regards,  
+The ResourceHub Team` 
             }; 
             var emailResult = emailClient->sendMessage(emailMsg); 
             if emailResult is error { 
