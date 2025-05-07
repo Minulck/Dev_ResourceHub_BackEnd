@@ -6,6 +6,7 @@ public type Profile record {|
     string username;
     string profile_picture_url;
     string bio?;
+    string usertype?;
     string email?;
     string phone_number?;
 |};
@@ -39,6 +40,7 @@ service /settings on ln {
                     email,
                     phone_number, 
                     profile_picture_url, 
+                    usertype,
                     bio 
                     FROM users
                     WHERE user_id = ${userid}`);
