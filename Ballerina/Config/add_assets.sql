@@ -1,16 +1,16 @@
 -- Insert IT Equipment
 INSERT INTO assets (asset_name, category, quantity, condition_type, location, is_available)
 VALUES 
-('Laptop', 'IT Equipment', 10, 'Good', 'IT Department', TRUE),
-('Desktop Computer', 'IT Equipment', 15, 'Good', 'IT Department', TRUE),
-('Projector', 'IT Equipment', 5, 'Good', 'Conference Room', TRUE),
-('Mouse', 'IT Equipment', 25, 'New', 'IT Department', TRUE),
-('Keyboard', 'IT Equipment', 25, 'New', 'IT Department', TRUE),
-('Router', 'IT Equipment', 10, 'Good', 'IT Department', TRUE),
-('Webcam', 'IT Equipment', 8, 'Used', 'IT Department', TRUE),
-('Headset', 'IT Equipment', 12, 'Good', 'IT Department', TRUE),
-('External Hard Drive', 'IT Equipment', 6, 'Good', 'IT Department', TRUE),
-('USB Flash Drive', 'IT Equipment', 30, 'New', 'IT Department', TRUE);
+('Laptop', 'Electronics & IT', 10, 'Good', 'IT Department', TRUE),
+('Desktop Computer', 'Electronics & IT', 15, 'Good', 'IT Department', TRUE),
+('Projector', 'Electronics & IT', 5, 'Good', 'Conference Room', TRUE),
+('Mouse', 'Electronics & IT', 25, 'New', 'IT Department', TRUE),
+('Keyboard', 'Electronics & IT', 25, 'New', 'IT Department', TRUE),
+('Router', 'Electronics & IT', 10, 'Good', 'IT Department', TRUE),
+('Webcam', 'Electronics & IT', 8, 'Used', 'IT Department', TRUE),
+('Headset', 'Electronics & IT', 12, 'Good', 'IT Department', TRUE),
+('External Hard Drive', 'Electronics & IT', 6, 'Good', 'IT Department', TRUE),
+('USB Flash Drive', 'Electronics & IT', 30, 'New', 'IT Department', TRUE);
 
 -- Insert Office Supplies
 INSERT INTO assets (asset_name, category, quantity, condition_type, location, is_available)
