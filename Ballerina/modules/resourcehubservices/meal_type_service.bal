@@ -2,12 +2,14 @@ import ballerina/http;
 import ballerina/sql;
 import ballerina/io;
 
-public type MealType record {|
+// Defines the structure of a MealType record
+public type MealType record {| 
     int mealtype_id?;
     string mealtype_name;
     string mealtype_image_url;
 |};
 
+// CORS configuration for allowing specific cross-origin requests
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
@@ -16,8 +18,10 @@ public type MealType record {|
     }
 }
 
+// Service handling CRUD operations for meal types
 service /mealtype on ln{
-     // MealType endpoints
+
+    // Retrieve all meal types
     resource function get details() returns MealType[]|error {
         stream<MealType, sql:Error?> resultStream = 
             dbClient->query(`SELECT mealtype_id, mealtype_name , mealtype_image_url  FROM mealtypes`);
@@ -30,6 +34,7 @@ service /mealtype on ln{
         return mealtypes;
     }
 
+    // Add a new meal type
     resource function post add(@http:Payload MealType mealType) returns json|error {
         io:println("Received meal type data: " + mealType.toJsonString());
 
@@ -49,6 +54,7 @@ service /mealtype on ln{
         };
     }
 
+    // Update existing meal type by ID
     resource function put details/[int id](@http:Payload MealType mealType) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE mealtypes 
@@ -68,6 +74,7 @@ service /mealtype on ln{
         };
     }
 
+    // Delete meal type by ID
     resource function delete details/[int id]() returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             DELETE FROM mealtypes WHERE mealtype_id = ${id}
@@ -84,11 +91,13 @@ service /mealtype on ln{
         };
     }
 
+    // Handle preflight CORS requests
     resource function options .() returns http:Ok {
         return http:OK;
     }
 }
 
+// Log service start
 public function startMealTypeService() returns error? {
     io:println("Meal Type service started on port 9090");
 }

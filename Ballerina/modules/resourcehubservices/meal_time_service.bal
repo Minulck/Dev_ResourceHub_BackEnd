@@ -2,12 +2,14 @@ import ballerina/http;
 import ballerina/sql;
 import ballerina/io;
 
-
-public type MealTime record {|
+// Defines the structure of a MealTime object
+public type MealTime record {| 
     int mealtime_id?;
     string mealtime_name;
     string mealtime_image_url;
 |};
+
+// CORS configuration for cross-origin requests
 @http:ServiceConfig {
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
@@ -16,8 +18,10 @@ public type MealTime record {|
     }
 }
 
+// MealTime service with CRUD operations
 service /mealtime on ln{
-     // MealTime endpoints
+
+    // Fetch all mealtime records
     resource function get details() returns MealTime[]|error {
         stream<MealTime, sql:Error?> resultStream = 
             dbClient->query(`SELECT mealtime_id,mealtime_name , mealtime_image_url FROM mealtimes`);
@@ -30,6 +34,7 @@ service /mealtime on ln{
         return mealtimes;
     }
 
+    // Add a new mealtime record
     resource function post add(@http:Payload MealTime mealTime) returns json|error {
         io:println("Received meal time data: " + mealTime.toJsonString());
 
@@ -49,6 +54,7 @@ service /mealtime on ln{
         };
     }
 
+    // Update an existing mealtime by ID
     resource function put details/[int id](@http:Payload MealTime mealTime) returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE mealtimes 
@@ -68,6 +74,7 @@ service /mealtime on ln{
         };
     }
 
+    // Delete a mealtime by ID
     resource function delete details/[int id]() returns json|error {
         sql:ExecutionResult result = check dbClient->execute(`
             DELETE FROM mealtimes WHERE mealtime_id = ${id}
@@ -85,6 +92,8 @@ service /mealtime on ln{
     }
 
 }
+
+// Logs service start on port 9090
 public function startMealTimeService() returns error? {
     io:println("Meal Time service started on port 9090");
 }
