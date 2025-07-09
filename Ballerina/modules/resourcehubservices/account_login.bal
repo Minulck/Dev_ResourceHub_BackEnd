@@ -74,13 +74,23 @@ service /auth on ln {
         if (result.password == credentials.password) {
             jwt:IssuerConfig config = jwtIssuerConfig;
             config.username = credentials.email;
-            config.customClaims = {"role": result.usertype};
-            config.customClaims = {"username": result.username};
-            config.customClaims = {"id": result.user_id};
-            config.customClaims = {"profile_picture": result.profile_picture_url};
+            config.customClaims = {
+                "role": result.usertype,
+                "username": result.username,
+                "id": result.user_id,
+                "email": result.email,
+                "profile_picture": result.profile_picture_url
+            };
             string token = check jwt:issue(config);
 
-            return {token: token, usertype: result.usertype , username: result.username,id: result.user_id, email: result.email , profile_picture_url: result.profile_picture_url};
+            return {
+                token: token,
+                usertype: result.usertype,
+                username: result.username,
+                id: result.user_id,
+                email: result.email,
+                profile_picture_url: result.profile_picture_url
+            };
         } else {
             io:println("Invalid password for user: " + credentials.email);
             return error("Invalid password");

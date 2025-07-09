@@ -21,7 +21,7 @@ public type MealEvent record {|
         allowHeaders: ["Content-Type"] 
     } 
 } 
-service /calander on ln { 
+service /calendar on ln { 
     // MealEvents endpoints 
     resource function get mealevents/[int userid]() returns MealEvent[]|error { 
         stream<MealEvent, sql:Error?> resultStream = 
