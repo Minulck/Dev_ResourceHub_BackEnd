@@ -2,48 +2,13 @@ import ballerina/email;
 import ballerina/http;
 import ballerina/io;
 import ballerina/jwt;
-import ballerina/random;
 import ballerina/sql;
 
 type ForgotPassword record {
     string email;
 };
 
-// JWT issuer configuration
-jwt:IssuerConfig jwtIssuerConfig = {
-    username: "ballerina",
-    issuer: "ballerina",
-    audience: ["ballerina.io"],
-    signatureConfig: {
-        config: {
-            keyFile: "./resources/certificate.key"
-        }
-    },
-    expTime: 3600
-};
 
-// JWT validator configuration
-jwt:ValidatorConfig jwtValidatorConfig = {
-    issuer: "ballerina",
-    audience: ["ballerina.io"],
-    signatureConfig: {
-        certFile: "./resources/certificate.crt"
-    },
-    clockSkew: 60
-};
-
-// Utility function to generate random lowercase password
-function generateSimplePassword(int length) returns string|error {
-    final string LOWERCASE = "abcdefghijklmnopqrstuvwxyz";
-    string[] chars = [];
-
-    foreach int _ in 0 ..< length {
-        int randomIndex = check random:createIntInRange(0, LOWERCASE.length());
-        chars.push(LOWERCASE[randomIndex]);
-    }
-
-    return chars.reduce(function(string acc, string c) returns string => acc + c, "");
-}
 
 @http:ServiceConfig {
     cors: {

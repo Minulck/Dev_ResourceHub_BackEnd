@@ -1,6 +1,8 @@
 import ballerina/http;
 import ballerina/sql;
 import ballerina/io;
+import ballerina/jwt;
+
 
 // Defines the structure of a MealType record
 public type MealType record {| 
@@ -14,78 +16,85 @@ public type MealType record {|
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowHeaders: ["Content-Type"]
+        allowHeaders: ["Content-Type", "Authorization"]
     }
 }
 
 // Service handling CRUD operations for meal types
-service /mealtype on ln{
 
-    // Retrieve all meal types
-    resource function get details() returns MealType[]|error {
+service /mealtype on ln{
+    // Only admin, manager, and User can view meal types
+    resource function get details(http:Request req) returns MealType[]|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
         stream<MealType, sql:Error?> resultStream = 
             dbClient->query(`SELECT mealtype_id, mealtype_name , mealtype_image_url  FROM mealtypes`);
-        
         MealType[] mealtypes = [];
         check resultStream.forEach(function(MealType meal) {
             mealtypes.push(meal);
         });
-
         return mealtypes;
     }
 
-    // Add a new meal type
-    resource function post add(@http:Payload MealType mealType) returns json|error {
+    // Only admin and manager can add meal types
+    resource function post add(http:Request req, @http:Payload MealType mealType) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to add meal types");
+        }
         io:println("Received meal type data: " + mealType.toJsonString());
-
         sql:ExecutionResult result = check dbClient->execute(`
             INSERT INTO mealtypes (mealtype_name, mealtype_image_url)
             VALUES (${mealType.mealtype_name}, ${mealType.mealtype_image_url})
         `);
-
         int|string? lastInsertId = result.lastInsertId;
         if lastInsertId is int {
             mealType.mealtype_id = lastInsertId;
         }
-
         return {
             message: "Meal type added successfully",
             mealType: mealType
         };
     }
 
-    // Update existing meal type by ID
-    resource function put details/[int id](@http:Payload MealType mealType) returns json|error {
+    // Only admin and manager can update meal types
+    resource function put details/[int id](http:Request req, @http:Payload MealType mealType) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to update meal types");
+        }
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE mealtypes 
             SET mealtype_name = ${mealType.mealtype_name}, mealtype_image_url = ${mealType.mealtype_image_url}
             WHERE mealtype_id = ${id}
         `);
-
         if result.affectedRowCount == 0 {
             return {
                 message: "Meal type not found"
             };
         }
-
         return {
             message: "Meal type updated successfully",
             mealType: mealType
         };
     }
 
-    // Delete meal type by ID
-    resource function delete details/[int id]() returns json|error {
+    // Only admin and manager can delete meal types
+    resource function delete details/[int id](http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to delete meal types");
+        }
         sql:ExecutionResult result = check dbClient->execute(`
             DELETE FROM mealtypes WHERE mealtype_id = ${id}
         `);
-
         if result.affectedRowCount == 0 {
             return {
                 message: "Meal type not found"
             };
         }
-
         return {
             message: "Meal type deleted successfully"
         };
@@ -96,7 +105,6 @@ service /mealtype on ln{
         return http:OK;
     }
 }
-
 // Log service start
 public function startMealTypeService() returns error? {
     io:println("Meal Type service started on port 9090");

@@ -1,6 +1,10 @@
 import ballerina/http;
 import ballerina/io;
 import ballerina/sql;
+import ballerina/jwt;
+
+// Helper function to extract and validate JWT token and return payload
+
 
 public type Maintenance record {|
     int maintenance_id?;
@@ -30,12 +34,18 @@ public type Notification record {|
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowHeaders: ["Content-Type"]
+        allowHeaders: ["Content-Type", "Authorization"]
     }
 }
 
+
 service /maintenance on ln {
-    resource function get details() returns Maintenance[]|error {
+    // Only admin, manager, and User can view maintenance details
+    resource function get details(http:Request req) returns Maintenance[]|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
         stream<Maintenance, sql:Error?> resultStream =
             dbClient->query(`SELECT 
                 u.profile_picture_url AS profilePicture,
@@ -50,49 +60,51 @@ service /maintenance on ln {
                 FROM maintenance m
                 JOIN users u ON m.user_id = u.user_id;
         `);
-
         Maintenance[] maintenances = [];
         check resultStream.forEach(function(Maintenance maintenance) {
             maintenances.push(maintenance);
         });
-
         return maintenances;
     }
 
-    // POST: Add a new maintenance request
-    resource function post add(@http:Payload Maintenance maintenance) returns json|error {
-        
-        // Use parameterized query to prevent SQL injection
+    // Only admin and manager can add maintenance requests
+    resource function post add(http:Request req, @http:Payload Maintenance maintenance) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to add maintenance requests");
+        }
         sql:ExecutionResult result = check dbClient->execute(
             `INSERT INTO maintenance (name, user_id, description, priority_level, status, submitted_date)
                                    VALUES (${maintenance.name}, ${maintenance.user_id}, ${maintenance.description}, 
                                            ${maintenance.priorityLevel}, 'Pending', NOW())`
         );
-
         if (result.affectedRowCount == 0) {
             return error("Failed to add maintenance request");
         }
-
         return {"message": "Maintenance request has been added "};
     }
 
-    // DELETE: Remove a maintenance request by ID
-    resource function delete details/[int id]() returns json|error {
-
+    // Only admin and manager can delete maintenance requests
+    resource function delete details/[int id](http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to delete maintenance requests");
+        }
         sql:ExecutionResult result = check dbClient->execute(
             `DELETE FROM maintenance WHERE maintenance_id = ${id}`
         );
-
         if (result.affectedRowCount == 0) {
             return error("No maintenance found with the given ID");
         }
-
         return {"message": "Maintenance request has been deleted "};
     }
 
-    // PUT: Update a maintenance request by ID
-    resource function put details/[int id](@http:Payload Maintenance maintenance) returns json|error {
-
+    // Only admin and manager can update maintenance requests
+    resource function put details/[int id](http:Request req, @http:Payload Maintenance maintenance) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to update maintenance requests");
+        }
         sql:ExecutionResult result = check dbClient->execute(
             `UPDATE maintenance 
             SET description = ${maintenance.description}, 
@@ -100,15 +112,18 @@ service /maintenance on ln {
             status = ${maintenance.status ?: "Pending"} 
             WHERE maintenance_id = ${id}`
         );
-
         if (result.affectedRowCount == 0) {
             return error("No maintenance found with the given ID");
         }
-
         return {"message": "Maintenance request has been updated "};
     }
 
-    resource function get notification() returns Notification[]|error{
+    // Only admin, manager, and User can view notifications
+    resource function get notification(http:Request req) returns Notification[]|error{
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
         stream< Notification ,sql:Error?> resultstream = dbClient->query(
             `select m.submitted_date,u.username,m.description,m.priority_level AS priorityLevel,m.status,m.name
             from notification n
@@ -122,7 +137,12 @@ service /maintenance on ln {
             return notifications;
     }
 
-    resource function post addnotification(@http:Payload Notification notification) returns json|error{
+    // Only admin and manager can add notifications
+    resource function post addnotification(http:Request req, @http:Payload Notification notification) returns json|error{
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["admin", "manager"])) {
+            return error("Forbidden: You do not have permission to add notifications");
+        }
         sql:ExecutionResult result = check dbClient->execute(`
         insert into notification (user_id,maintenance_id)
         values(${notification.user_id},${notification.maintenance_id})`
@@ -130,7 +150,6 @@ service /maintenance on ln {
          if (result.affectedRowCount == 0) {
             return error("Failed to add notification");
         }
-
         return {"message": "Notification request has been updated."};
     }
 }
