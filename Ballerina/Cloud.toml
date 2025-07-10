@@ -1,0 +1,13 @@
+[settings.buildpack]
+base = "ballerina/choreo-buildpack-2201.10.x"
+
+[container.image]
+repository = "user"
+name = "backend"
+tag = "latest"
+
+[cloud.deployment]
+min_memory = "512Mi"
+max_memory = "1Gi"
+min_cpu = "0.25"
+max_cpu = "1.0"
