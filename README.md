@@ -92,12 +92,12 @@ The **Resource Hub Backend** is a Ballerina-based API service that manages organ
    USER = "your_database_user"
    PASSWORD = "your_database_password"
    HOST = "localhost"
-   PORT = "3306"  # MySQL default port
+   PORT = 3306  # MySQL default port
    DATABASE = "your_database_name"
 
    # SMTP server configuration
    SMTP_HOST = "your_smtp_host"
-   SMTP_PORT = "587"
+   SMTP_PORT = 587
    SMTP_USER = "your_smtp_username"
    SMTP_PASSWORD = "your_smtp_password"
 
