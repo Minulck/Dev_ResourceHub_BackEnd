@@ -1,4 +1,4 @@
-import backend.resourcehubservices as resourcehubservices;
+import ResourceHub.resourcehubservices as resourcehubservices;
 public function main() returns error? {
     check resourcehubservices:connectDatabase();
     check resourcehubservices:startMealTypeService();
