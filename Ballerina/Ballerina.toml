@@ -1,8 +1,8 @@
 [package]
-org = "user"
-name = "backend"
+org = "FiveStackDev"
+name = "ResourceHub"
 version = "0.1.0"
-distribution = "2201.10.3"
+distribution = "2201.5.0"
 
 [build-options]
 observabilityIncluded = true
