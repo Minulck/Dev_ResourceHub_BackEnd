@@ -43,7 +43,7 @@ jwt:IssuerConfig jwtIssuerConfig = {
     audience: ["ballerina.io"],
     signatureConfig: {
         config: {
-            keyFile: "./resources/certificate.key"
+            keyFile: "auth//certificate.key"
         }
     },
     expTime: 3600
@@ -54,7 +54,7 @@ jwt:ValidatorConfig jwtValidatorConfig = {
     issuer: "ballerina",
     audience: ["ballerina.io"],
     signatureConfig: {
-        certFile: "./resources/certificate.crt"
+        certFile: "auth/certificate.crt"
     },
     clockSkew: 60
 };
