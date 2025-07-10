@@ -47,7 +47,7 @@ service /dashboard/admin on ln {
     // Only admin can access dashboard admin endpoints
     resource function get stats(http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         // Existing counts
@@ -183,7 +183,7 @@ service /dashboard/admin on ln {
     // Resource to get data for resource cards
     resource function get resources(http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
 
@@ -212,7 +212,7 @@ service /dashboard/admin on ln {
     // Resource to get meal distribution data for pie chart
     resource function get mealdistribution(http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
     // Query to get all meal types from mealtimes
@@ -294,7 +294,7 @@ service /dashboard/admin on ln {
     // Resource to get resource allocation data
     resource function get resourceallocation(http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
     // Query to get total and allocated quantities by category

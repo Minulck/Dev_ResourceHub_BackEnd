@@ -1,10 +1,10 @@
-import ballerina/http;
-import ballerina/sql;
 import ballerina/email;
+import ballerina/http;
 import ballerina/jwt;
+import ballerina/sql;
 
 // Profile data structure for user settings
-public type Profile record {| 
+public type Profile record {|
     string username;
     string profile_picture_url;
     string? bio = ();
@@ -30,8 +30,6 @@ public type Password record {|
     string new_password;
 |};
 
-
-
 // CORS configuration for client access
 @http:ServiceConfig {
     cors: {
@@ -47,7 +45,7 @@ service /settings on ln {
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["Admin", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
 
@@ -74,7 +72,7 @@ service /settings on ln {
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update this profile");
         }
 
@@ -98,7 +96,7 @@ service /settings on ln {
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update this email");
         }
 
@@ -143,7 +141,7 @@ If you didn’t request this, you can safely ignore this message.
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update this phone number");
         }
 
@@ -165,29 +163,26 @@ If you didn’t request this, you can safely ignore this message.
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update this password");
         }
 
         // Fetch the current password for validation
-        stream<record {| string password; |}, sql:Error?> result = dbClient->query(`
+        stream<record {|string password;|}, sql:Error?> result = dbClient->query(`
             SELECT password FROM users WHERE user_id = ${userid}
         `);
 
         string? storedPassword = null;
-        check result.forEach(function(record {| string password; |} rec) {
+        check result.forEach(function(record {|string password;|} rec) {
             storedPassword = rec.password;
         });
 
-        // If admin is updating password, skip current password validation
-        if (!hasAnyRole(payload, ["Admin"])) {
-            if storedPassword != password.current_password {
-                return error("Current password is incorrect");
-            }
+        if storedPassword != password.current_password {
+            return error("Current password is incorrect");
+        }
 
-            if password.current_password == password.new_password {
-                return error("New password cannot be the same as the current password");
-            }
+        if password.current_password == password.new_password {
+            return error("New password cannot be the same as the current password");
         }
 
         // Update password in database

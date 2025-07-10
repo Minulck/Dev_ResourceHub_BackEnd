@@ -26,7 +26,7 @@ service /mealtype on ln{
     // Only admin, manager, and User can view meal types
     resource function get details(http:Request req) returns MealType[]|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<MealType, sql:Error?> resultStream = 
@@ -41,7 +41,7 @@ service /mealtype on ln{
     // Only admin and manager can add meal types
     resource function post add(http:Request req, @http:Payload MealType mealType) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to add meal types");
         }
         io:println("Received meal type data: " + mealType.toJsonString());
@@ -62,7 +62,7 @@ service /mealtype on ln{
     // Only admin and manager can update meal types
     resource function put details/[int id](http:Request req, @http:Payload MealType mealType) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update meal types");
         }
         sql:ExecutionResult result = check dbClient->execute(`
@@ -84,7 +84,7 @@ service /mealtype on ln{
     // Only admin and manager can delete meal types
     resource function delete details/[int id](http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to delete meal types");
         }
         sql:ExecutionResult result = check dbClient->execute(`

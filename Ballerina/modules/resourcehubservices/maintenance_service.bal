@@ -43,7 +43,7 @@ service /maintenance on ln {
     // Only admin, manager, and User can view maintenance details
     resource function get details(http:Request req) returns Maintenance[]|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<Maintenance, sql:Error?> resultStream =
@@ -70,7 +70,7 @@ service /maintenance on ln {
     // Only admin and manager can add maintenance requests
     resource function post add(http:Request req, @http:Payload Maintenance maintenance) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to add maintenance requests");
         }
         sql:ExecutionResult result = check dbClient->execute(
@@ -87,7 +87,7 @@ service /maintenance on ln {
     // Only admin and manager can delete maintenance requests
     resource function delete details/[int id](http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to delete maintenance requests");
         }
         sql:ExecutionResult result = check dbClient->execute(
@@ -102,7 +102,7 @@ service /maintenance on ln {
     // Only admin and manager can update maintenance requests
     resource function put details/[int id](http:Request req, @http:Payload Maintenance maintenance) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update maintenance requests");
         }
         sql:ExecutionResult result = check dbClient->execute(
@@ -121,7 +121,7 @@ service /maintenance on ln {
     // Only admin, manager, and User can view notifications
     resource function get notification(http:Request req) returns Notification[]|error{
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream< Notification ,sql:Error?> resultstream = dbClient->query(
@@ -140,7 +140,7 @@ service /maintenance on ln {
     // Only admin and manager can add notifications
     resource function post addnotification(http:Request req, @http:Payload Notification notification) returns json|error{
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to add notifications");
         }
         sql:ExecutionResult result = check dbClient->execute(`

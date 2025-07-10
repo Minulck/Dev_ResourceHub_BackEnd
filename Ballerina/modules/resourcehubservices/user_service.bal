@@ -30,7 +30,7 @@ service /user on ln {
     // Only admin, manager, and User can view user details
     resource function get details(http:Request req) returns User[]|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "SuperAdmin", "User"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<User, sql:Error?> resultStream = 
@@ -45,7 +45,7 @@ service /user on ln {
     // Only admin and manager can add users
     resource function post add(http:Request req, @http:Payload User user) returns json|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to add users");
         }
         // Generate a random password of length 8 
@@ -91,7 +91,7 @@ The ResourceHub Team`
     // Only admin and manager can delete users
     resource function delete details/[int id](http:Request req) returns json|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to delete users");
         }
         sql:ExecutionResult result = check dbClient->execute(` 
@@ -110,7 +110,7 @@ The ResourceHub Team`
     // Only admin and manager can update users
     resource function PUT details/[int userid](http:Request req, @http:Payload User user) returns json|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update users");
         }
         sql:ExecutionResult result = check dbClient->execute(` 

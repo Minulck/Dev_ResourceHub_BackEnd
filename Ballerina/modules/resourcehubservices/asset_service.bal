@@ -26,7 +26,7 @@ service /asset on ln{
     // Only admin, manager, and User can view asset details
     resource function get details(http:Request req) returns Asset[]|error{
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<Asset, sql:Error?> resultStream = dbClient->query(`SELECT * FROM assets`);
@@ -40,7 +40,7 @@ service /asset on ln{
     // Only admin and manager can add assets
     resource function post add(http:Request req, @http:Payload Asset asset) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to add assets");
         }
         sql:ExecutionResult result = check dbClient->execute(
@@ -61,7 +61,7 @@ service /asset on ln{
     // Only admin and manager can update assets
     resource function put details/[int id](http:Request req, @http:Payload Asset asset) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to update assets");
         }
         sql:ExecutionResult result = check dbClient->execute(`
@@ -83,7 +83,7 @@ service /asset on ln{
     // Only admin and manager can delete assets
     resource function delete details/[int id](http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "SuperAdmin"])) {
             return error("Forbidden: You do not have permission to delete assets");
         }
         sql:ExecutionResult result = check dbClient->execute(`
