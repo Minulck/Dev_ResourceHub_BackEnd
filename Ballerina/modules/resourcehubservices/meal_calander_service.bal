@@ -26,7 +26,7 @@ service /calendar on ln {
     // Only admin, manager, and User can view all meal events
     resource function get mealevents(http:Request req) returns MealEvent[]|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<MealEvent, sql:Error?> resultStream = 
@@ -45,7 +45,7 @@ service /calendar on ln {
     // Only admin, manager, and User can view their own meal events
     resource function get mealevents/[int userid](http:Request req) returns MealEvent[]|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<MealEvent, sql:Error?> resultStream = 
@@ -65,7 +65,7 @@ service /calendar on ln {
     // Only admin and manager can add meal events
     resource function post mealevents/add(http:Request req, @http:Payload MealEvent event) returns json|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to add meal events");
         }
         sql:ExecutionResult result = check dbClient->execute(` 
@@ -81,7 +81,7 @@ service /calendar on ln {
     // Only admin and manager can delete meal events
     resource function delete mealevents/[int id](http:Request req) returns json|error { 
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to delete meal events");
         }
         sql:ExecutionResult result = check dbClient->execute(` 

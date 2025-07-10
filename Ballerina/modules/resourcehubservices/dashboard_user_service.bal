@@ -19,7 +19,7 @@ service /dashboard/user on ln {
     // Only admin, manager, and User can view user dashboard stats
     resource function get stats/[int userId](http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         // Query for meals today (assuming meal_request_date is a timestamp)

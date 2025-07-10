@@ -26,7 +26,7 @@ service /mealtime on ln{
     // Only admin, manager, and User can view mealtime details
     resource function get details(http:Request req) returns MealTime[]|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager", "User"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
         stream<MealTime, sql:Error?> resultStream = 
@@ -41,7 +41,7 @@ service /mealtime on ln{
     // Only admin and manager can add mealtime records
     resource function post add(http:Request req, @http:Payload MealTime mealTime) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to add mealtime records");
         }
         io:println("Received meal time data: " + mealTime.toJsonString());
@@ -62,7 +62,7 @@ service /mealtime on ln{
     // Only admin and manager can update mealtime records
     resource function put details/[int id](http:Request req, @http:Payload MealTime mealTime) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to update mealtime records");
         }
         sql:ExecutionResult result = check dbClient->execute(`
@@ -84,7 +84,7 @@ service /mealtime on ln{
     // Only admin and manager can delete mealtime records
     resource function delete details/[int id](http:Request req) returns json|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to delete mealtime records");
         }
         sql:ExecutionResult result = check dbClient->execute(`

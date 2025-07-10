@@ -47,7 +47,7 @@ service /settings on ln {
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["admin", "User"])) {
+        if (!hasAnyRole(payload, ["Admin", "User"])) {
             return error("Forbidden: You do not have permission to access this resource");
         }
 
@@ -74,7 +74,7 @@ service /settings on ln {
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to update this profile");
         }
 
@@ -98,7 +98,7 @@ service /settings on ln {
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to update this email");
         }
 
@@ -143,7 +143,7 @@ If you didn’t request this, you can safely ignore this message.
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to update this phone number");
         }
 
@@ -165,7 +165,7 @@ If you didn’t request this, you can safely ignore this message.
         jwt:Payload payload = check getValidatedPayload(req);
 
         // Only allow users with specific roles (e.g., admin, manager)
-        if (!hasAnyRole(payload, ["admin", "manager"])) {
+        if (!hasAnyRole(payload, ["Admin", "manager"])) {
             return error("Forbidden: You do not have permission to update this password");
         }
 
@@ -180,7 +180,7 @@ If you didn’t request this, you can safely ignore this message.
         });
 
         // If admin is updating password, skip current password validation
-        if (!hasAnyRole(payload, ["admin"])) {
+        if (!hasAnyRole(payload, ["Admin"])) {
             if storedPassword != password.current_password {
                 return error("Current password is incorrect");
             }
