@@ -1,8 +1,8 @@
 [package]
-org = "FiveStackDev"
-name = "ResourceHub"
+org = "user"
+name = "backend"
 version = "0.1.0"
-distribution = "2201.5.0"
+distribution = "2201.10.3"
 
 [build-options]
 observabilityIncluded = true
@@ -11,5 +11,3 @@ observabilityIncluded = true
 groupId = "mysql"
 artifactId = "mysql-connector-java"
 version = "8.0.26"
-
-  
