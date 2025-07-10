@@ -165,7 +165,7 @@ service /assetrequest on ln {
     }
     resource function get dueassets(http:Request req) returns AssetRequest[]|error {
         jwt:Payload payload = check getValidatedPayload(req);
-        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
             return error("Forbidden: You do not have permission to access due assets");
         }
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
