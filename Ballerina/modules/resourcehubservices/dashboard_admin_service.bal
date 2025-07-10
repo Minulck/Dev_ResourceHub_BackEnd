@@ -1,6 +1,7 @@
 import ballerina/http;
 import ballerina/io;
 import ballerina/sql;
+import ballerina/jwt;
 
 type MonthlyUserData record {|
     int month;
@@ -39,12 +40,16 @@ type ResourceAllocationData record {|
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowHeaders: ["Content-Type"]
+        allowHeaders: ["Content-Type", "Authorization"]
     }
 }
 service /dashboard/admin on ln {
-    // Resource to get summary statistics for the dashboard
-    resource function get stats() returns json|error {
+    // Only admin can access dashboard admin endpoints
+    resource function get stats(http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
         // Existing counts
         record {|int user_count;|} userResult = check dbClient->queryRow(`SELECT COUNT(user_id) AS user_count FROM users`);
         int userCount = userResult.user_count;
@@ -176,7 +181,11 @@ service /dashboard/admin on ln {
     }
 
     // Resource to get data for resource cards
-    resource function get resources() returns json|error {
+    resource function get resources(http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
 
         return [
             {
@@ -201,7 +210,11 @@ service /dashboard/admin on ln {
     }
 
     // Resource to get meal distribution data for pie chart
-    resource function get mealdistribution() returns json|error {
+    resource function get mealdistribution(http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
     // Query to get all meal types from mealtimes
     stream<MealTime, sql:Error?> mealTimeStream = dbClient->query(
         `SELECT mealtime_id, mealtime_name FROM mealtimes ORDER BY mealtime_id`,
@@ -279,7 +292,11 @@ service /dashboard/admin on ln {
 }
 
     // Resource to get resource allocation data
-    resource function get resourceallocation() returns json|error {
+    resource function get resourceallocation(http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
     // Query to get total and allocated quantities by category
     stream<ResourceAllocationData, sql:Error?> allocationStream = dbClient->query(
         `SELECT 

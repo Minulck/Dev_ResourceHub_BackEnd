@@ -4,6 +4,7 @@ import ballerina/email;
 import ballerina/mime;
 
 
+
 configurable string SMTP_HOST = ?;
 configurable string SMTP_USER = ?;
 configurable string SMTP_PASSWORD = ?;

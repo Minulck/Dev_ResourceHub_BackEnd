@@ -1,30 +1,31 @@
-import ballerina/http;
-import ballerina/sql;
 import ballerina/email;
+import ballerina/http;
+import ballerina/jwt;
+import ballerina/sql;
 
 // Profile data structure for user settings
-public type Profile record {| 
+public type Profile record {|
     string username;
     string profile_picture_url;
-    string bio?;
-    string usertype?;
-    string email?;
-    string phone_number?;
+    string? bio = ();
+    string? usertype = ();
+    string? email = ();
+    string? phone_number = ();
 |};
 
 // Structure to carry email and verification code
-public type Email record {| 
+public type Email record {|
     string email;
-    int code?;
+    int? code;
 |};
 
 // Structure for phone number update
-public type Phone record {| 
+public type Phone record {|
     string phone_number;
 |};
 
 // Structure for password update request
-public type Password record {| 
+public type Password record {|
     string current_password;
     string new_password;
 |};
@@ -34,27 +35,31 @@ public type Password record {|
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
         allowMethods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
-        allowHeaders: ["Content-Type"]
+        allowHeaders: ["Content-Type", "Authorization"]
     }
 }
-
-// Settings service for user profile, email, phone, and password management
 service /settings on ln {
 
-    // Fetch user profile details by user ID
-    resource function Get details/[int userid]() returns Profile[]|error {
+    // Fetch user profile details by user ID - accessible by user themselves or admin
+    resource function get details/[int userid](http:Request req) returns Profile[]|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+
+        // Only allow users with specific roles (e.g., admin, manager)
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
+
         stream<Profile, sql:Error?> resultStream = dbClient->query(`
-                    SELECT username,
-                    email,
-                    phone_number, 
-                    profile_picture_url, 
-                    usertype,
-                    bio 
-                    FROM users
-                    WHERE user_id = ${userid}`);
+            SELECT username,
+            email,
+            phone_number,
+            profile_picture_url,
+            usertype,
+            bio
+            FROM users
+            WHERE user_id = ${userid}`);
 
         Profile[] profiles = [];
-
         check resultStream.forEach(function(Profile profile) {
             profiles.push(profile);
         });
@@ -62,8 +67,15 @@ service /settings on ln {
         return profiles;
     }
 
-    // Update username, profile picture, and bio
-    resource function PUT profile/[int userid](@http:Payload Profile profile) returns json|error {
+    // Update username, profile picture, and bio - user can update own profile, admin can update any
+    resource function put profile/[int userid](http:Request req, @http:Payload Profile profile) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+
+        // Only allow users with specific roles (e.g., admin, manager)
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to update this profile");
+        }
+
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE users SET 
             username = ${profile.username}, 
@@ -79,11 +91,18 @@ service /settings on ln {
         }
     }
 
-    // Update email address
-    resource function PUT email/[int userid](@http:Payload Email email) returns json|error {
+    // Update email address - user can update own email, admin can update any
+    resource function put email/[int userid](http:Request req, @http:Payload Email email) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+
+        // Only allow users with specific roles (e.g., admin, manager)
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to update this email");
+        }
+
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE users SET 
-            email = ${email.email} 
+                email = ${email.email} 
             WHERE user_id = ${userid}
         `);
 
@@ -94,7 +113,7 @@ service /settings on ln {
         }
     }
 
-    // Send verification email with code
+    // Send verification email with code - open endpoint (no auth required)
     resource function post sendEmail(@http:Payload Email email) returns json|error {
         email:Message resetEmail = {
             to: [email.email],
@@ -109,19 +128,26 @@ If you didn’t request this, you can safely ignore this message.
 
         error? emailResult = emailClient->sendMessage(resetEmail);
         if emailResult is error {
-            return error("Error sending Code to email: ");
+            return error("Error sending Code to email");
         }
 
         return {
-            message: "Code Send successfully. Check your email for the Verification Code."
+            message: "Code sent successfully. Check your email for the Verification Code."
         };
     }
 
-    // Update phone number
-    resource function PUT phone/[int userid](@http:Payload Phone phone) returns json|error {
+    // Update phone number - user can update own phone, admin can update any
+    resource function put phone/[int userid](http:Request req, @http:Payload Phone phone) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+
+        // Only allow users with specific roles (e.g., admin, manager)
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to update this phone number");
+        }
+
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE users SET 
-            phone_number = ${phone.phone_number} 
+                phone_number = ${phone.phone_number} 
             WHERE user_id = ${userid}
         `);
 
@@ -132,19 +158,25 @@ If you didn’t request this, you can safely ignore this message.
         }
     }
 
-    // Update password after validating current password
-    resource function PUT password/[int userid](@http:Payload Password password) returns json|error {
+    // Update password after validating current password - user can update own password, admin can update any
+    resource function put password/[int userid](http:Request req, @http:Payload Password password) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+
+        // Only allow users with specific roles (e.g., admin, manager)
+        if (!hasAnyRole(payload, ["Admin", "User", "SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to update this password");
+        }
+
         // Fetch the current password for validation
-        stream<record {| string password; |}, sql:Error?> result = dbClient->query(`
+        stream<record {|string password;|}, sql:Error?> result = dbClient->query(`
             SELECT password FROM users WHERE user_id = ${userid}
         `);
 
         string? storedPassword = null;
-        check result.forEach(function(record {| string password; |} rec) {
+        check result.forEach(function(record {|string password;|} rec) {
             storedPassword = rec.password;
         });
 
-        // Validate current password before update
         if storedPassword != password.current_password {
             return error("Current password is incorrect");
         }
@@ -156,7 +188,7 @@ If you didn’t request this, you can safely ignore this message.
         // Update password in database
         sql:ExecutionResult updateResult = check dbClient->execute(`
             UPDATE users SET 
-            password = ${password.new_password} 
+                password = ${password.new_password} 
             WHERE user_id = ${userid}
         `);
 

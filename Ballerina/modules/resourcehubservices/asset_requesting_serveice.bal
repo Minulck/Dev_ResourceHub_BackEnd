@@ -1,6 +1,7 @@
 import ballerina/http;
 import ballerina/io;
 import ballerina/sql;
+import ballerina/jwt;
 
 public type AssetRequest record {|
     int requestedasset_id?;
@@ -22,12 +23,21 @@ public type AssetRequest record {|
     cors: {
         allowOrigins: ["http://localhost:5173", "*"],
         allowMethods: ["GET", "POST", "DELETE", "OPTIONS", "PUT"],
-        allowHeaders: ["Content-Type"]
+        allowHeaders: ["Content-Type", "Authorization"]
     }
 }
-
 service /assetrequest on ln {
-    resource function get details() returns AssetRequest[]|error {
+    // Role-based access control: validate JWT and roles for secure endpoints
+    // Example: Add 'http:Request req' as a parameter and check roles using a helper like getValidatedPayload(req) and hasAnyRole(...)
+    // You should implement or import getValidatedPayload and hasAnyRole as in account_settings_service.bal
+
+// ...existing code...
+    resource function get details(http:Request req) returns AssetRequest[]|error {
+        // Validate JWT and check for allowed roles (admin, manager, user)
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
         ra.requestedasset_id,
@@ -56,7 +66,11 @@ service /assetrequest on ln {
         return assetrequests;
     }
 
-    resource function get details/[int userid]() returns AssetRequest[]|error {
+    resource function get details/[int userid](http:Request req) returns AssetRequest[]|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin" ,"User","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access this resource");
+        }
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
         ra.requestedasset_id,
@@ -86,7 +100,11 @@ service /assetrequest on ln {
         return assetrequests;
     }
 
-    resource function post add(@http:Payload AssetRequest assetrequest) returns json|error {
+    resource function post add(http:Request req, @http:Payload AssetRequest assetrequest) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin", "User","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to add asset requests");
+        }
         io:println("Received Asset Request data :" + assetrequest.toJsonString());
 
         sql:ExecutionResult result = check dbClient->execute(`
@@ -104,7 +122,11 @@ service /assetrequest on ln {
         };
     }
 
-    resource function delete details/[int id]() returns json|error {
+    resource function delete details/[int id](http:Request req) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to delete asset requests");
+        }
         sql:ExecutionResult result = check dbClient->execute(`
             DELETE FROM requestedassets WHERE requestedasset_id = ${id}
         `);
@@ -119,7 +141,11 @@ service /assetrequest on ln {
         };
     }
 
-    resource function put details/[int id](@http:Payload AssetRequest assetrequest) returns json|error {
+    resource function put details/[int id](http:Request req, @http:Payload AssetRequest assetrequest) returns json|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin", "User","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to update asset requests");
+        }
         sql:ExecutionResult result = check dbClient->execute(`
             UPDATE requestedassets 
             SET  handover_date = ${assetrequest.handover_date}, quantity = ${assetrequest.quantity} , status = ${assetrequest.status},is_returning = ${assetrequest.is_returning}
@@ -137,7 +163,11 @@ service /assetrequest on ln {
             assetrequest: assetrequest
         };
     }
-    resource function get dueassets() returns AssetRequest[]|error {
+    resource function get dueassets(http:Request req) returns AssetRequest[]|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access due assets");
+        }
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
         u.profile_picture_url,
@@ -167,7 +197,11 @@ service /assetrequest on ln {
         return assetrequests;
     }
 
-    resource function get dueassets/[int userid]() returns AssetRequest[]|error {
+    resource function get dueassets/[int userid](http:Request req) returns AssetRequest[]|error {
+        jwt:Payload payload = check getValidatedPayload(req);
+        if (!hasAnyRole(payload, ["Admin","User","SuperAdmin"])) {
+            return error("Forbidden: You do not have permission to access due assets");
+        }
         stream<AssetRequest, sql:Error?> resultstream = dbClient->query
         (`SELECT 
         u.profile_picture_url,
