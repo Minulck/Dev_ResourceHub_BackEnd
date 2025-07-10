@@ -84,7 +84,8 @@ service /auth on ln {
             string token = check jwt:issue(config);
 
             return {
-                token: token};
+                token: token
+};
         } else {
             io:println("Invalid password for user: " + credentials.email);
             return error("Invalid password");
